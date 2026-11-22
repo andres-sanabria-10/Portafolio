@@ -1,0 +1,35 @@
+---
+import type { Lang } from '../i18n/config';
+import { getTraceabilityContent } from '../i18n/trazabilidad';
+import { useTranslations } from '../i18n/utils';
+import type { TraceLabels } from './vue/trace';
+import TraceabilityFlow from './vue/TraceabilityFlow.vue';
+
+/**
+ * Diagrama interactivo del caso de trazabilidad, listo para el MDX:
+ * `<TraceabilityDiagram lang="es" />`.
+ */
+interface Props {
+  lang: Lang;
+}
+
+const { lang } = Astro.props;
+const t = useTranslations(lang);
+const { lanes, stages } = getTraceabilityContent(lang);
+
+const labels: TraceLabels = {
+  label: t('trace.label'),
+  hint: t('trace.hint'),
+  stageOf: t('trace.stageOf'),
+  inputs: t('trace.inputs'),
+  transform: t('trace.transform'),
+  problem: t('trace.problem'),
+  tech: t('trace.tech'),
+  carriers: t('trace.carriers'),
+  close: t('trace.close'),
+  prev: t('trace.prev'),
+  next: t('trace.next'),
+};
+---
+
+<TraceabilityFlow client:visible lanes={lanes} stages={stages} labels={labels} />

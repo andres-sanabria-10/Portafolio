@@ -131,6 +131,19 @@ const es = {
   'contact.linkedin.body': 'El canal más rápido para hablar de una vacante.',
   'contact.github.body': 'El código de este sitio y de mis proyectos.',
 
+  'trace.label': 'Arquitectura del pipeline de trazabilidad, en 10 etapas',
+  'trace.hint':
+    'Elige una etapa para ver qué datos entran, qué transformación se aplica, qué problema resolví ahí y con qué tecnología.',
+  'trace.stageOf': 'Etapa {n} de {total}',
+  'trace.inputs': 'Qué datos entran',
+  'trace.transform': 'Qué transformación se aplica',
+  'trace.problem': 'Qué problema resolví',
+  'trace.tech': 'Tecnología',
+  'trace.carriers': 'Transportadoras y protocolo',
+  'trace.close': 'Cerrar el detalle',
+  'trace.prev': 'Etapa anterior',
+  'trace.next': 'Etapa siguiente',
+
   'playground.title': 'SQL en el navegador',
   'playground.description':
     'Consulta con SQL un dataset sintético de 20.000 envíos usando DuckDB, que corre completo en tu navegador. Las consultas de ejemplo usan CTEs y window functions.',
@@ -299,6 +312,19 @@ const en: Record<UiKey, string> = {
     'Message me on LinkedIn or browse my code on GitHub. I reply to messages about data engineering openings.',
   'contact.linkedin.body': 'The fastest way to talk about an opening.',
   'contact.github.body': 'The code for this site and for my projects.',
+
+  'trace.label': 'Architecture of the traceability pipeline, in 10 stages',
+  'trace.hint':
+    'Pick a stage to see what data comes in, which transformation is applied, what problem I solved there and with which technology.',
+  'trace.stageOf': 'Stage {n} of {total}',
+  'trace.inputs': 'Data coming in',
+  'trace.transform': 'Transformation applied',
+  'trace.problem': 'Problem I solved',
+  'trace.tech': 'Technology',
+  'trace.carriers': 'Carriers and protocol',
+  'trace.close': 'Close details',
+  'trace.prev': 'Previous stage',
+  'trace.next': 'Next stage',
 
   'playground.title': 'SQL in the browser',
   'playground.description':
