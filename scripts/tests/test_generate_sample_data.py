@@ -156,6 +156,33 @@ def test_contar_duplicados_subestima_el_otd(envios: pd.DataFrame) -> None:
     assert min(diferencias) < -2
 
 
+# ------------------------------ Venta y flete --------------------------------- #
+
+
+def test_venta_y_flete_aparecen_cuando_corresponde(envios: pd.DataFrame) -> None:
+    # La venta y el peso se conocen al facturar; el flete, al despachar.
+    assert (envios["valor_venta"].isna() == envios["fecha_factura"].isna()).all()
+    assert (envios["peso_kg"].isna() == envios["fecha_factura"].isna()).all()
+    assert (envios["valor_flete"].isna() == envios["fecha_despacho"].isna()).all()
+    assert (envios["valor_venta"].dropna() >= gsd.VENTA_MINIMA).all()
+    assert (envios["valor_flete"].dropna() > 0).all()
+    assert (envios["peso_kg"].dropna() >= gsd.PESO_MINIMO_KG).all()
+
+
+def test_entre_15_y_25_por_ciento_de_guias_superan_la_meta(unicos: pd.DataFrame) -> None:
+    despachadas = unicos.loc[unicos["valor_flete"].notna()]
+    en_rojo = despachadas["valor_flete"] > despachadas["valor_venta"] * gsd.META_FLETE_PCT / 100
+    assert 0.15 <= en_rojo.mean() <= 0.25
+
+
+def test_agregar_valores_no_cambia_las_demas_columnas(envios: pd.DataFrame) -> None:
+    # Las columnas de valores usan su propio generador: las demás no se mueven.
+    columnas = [c for c in gsd.COLUMNAS if c not in {"valor_venta", "valor_flete", "peso_kg"}]
+    copia = gsd.generar_envios(CFG)
+    pd.testing.assert_frame_equal(envios[columnas], copia[columnas])
+    assert envios["valor_venta"].dropna().nunique() > 100
+
+
 def test_configuracion_rechaza_valores_invalidos() -> None:
     with pytest.raises(ValueError, match="envios"):
         gsd.Configuracion(envios=0)
@@ -193,3 +220,34 @@ def test_otd_en_sql_coincide_con_el_resumen(conexion, envios: pd.DataFrame) -> N
         assert calculado["guias_entregadas"] == fila["entregas"]
         assert calculado["otd_correcto_pct"] == pytest.approx(fila["otd_pct"], abs=0.011)
         assert calculado["otd_ingenuo_pct"] == pytest.approx(fila["otd_ingenuo_pct"], abs=0.011)
+
+
+def test_semaforo_en_sql_coincide_con_el_resumen(conexion, envios: pd.DataFrame) -> None:
+    sql = (DIR_CONSULTAS / "08_semaforo_flete_venta.sql").read_text(encoding="utf-8")
+    en_sql = conexion.execute(sql).df().set_index("transportadora")
+    resumen = gsd.construir_resumen(envios, CFG)["flete_vs_venta"]
+
+    assert len(en_sql) == len(resumen["por_transportadora"])
+    for fila in resumen["por_transportadora"]:
+        calculado = en_sql.loc[fila["transportadora"]]
+        assert calculado["guias"] == fila["guias"]
+        assert calculado["guias_en_rojo"] == fila["guias_en_rojo"]
+        assert float(calculado["pct_en_rojo"]) == pytest.approx(fila["pct_en_rojo"], abs=0.011)
+        assert float(calculado["pesos_sobre_la_meta"]) == pytest.approx(
+            fila["pesos_sobre_la_meta"], abs=1
+        )
+
+
+def test_rutas_en_sql_coinciden_con_el_resumen(conexion, envios: pd.DataFrame) -> None:
+    sql = (DIR_CONSULTAS / "07_transportadoras_misma_ruta.sql").read_text(encoding="utf-8")
+    en_sql = conexion.execute(sql).df().set_index(["ruta", "transportadora"])
+    rutas = gsd.construir_resumen(envios, CFG)["tiempos_por_ruta"]
+
+    assert rutas, "debe haber al menos una ruta compartida"
+    for ruta in rutas:
+        assert len(ruta["transportadoras"]) >= 2
+        for fila in ruta["transportadoras"]:
+            calculado = en_sql.loc[(ruta["ruta"], fila["transportadora"])]
+            assert calculado["entregas"] == fila["entregas"]
+            # SQL promedia minutos enteros; Python, segundos: se admite un centésimo de día.
+            assert calculado["dias_promedio"] == pytest.approx(fila["dias_promedio"], abs=0.011)

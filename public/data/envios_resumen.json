@@ -299,5 +299,703 @@
         "pct": 78.89
       }
     ]
+  },
+  "tiempos_por_ruta": [
+    {
+      "ruta": "Bogotá → Bogotá",
+      "origen": "Bogotá",
+      "destino": "Bogotá",
+      "entregas": 1495,
+      "transportadoras": [
+        {
+          "transportadora": "Transportadora A",
+          "entregas": 343,
+          "dias_promedio": 1.38,
+          "puesto": 1
+        },
+        {
+          "transportadora": "Transportadora G",
+          "entregas": 143,
+          "dias_promedio": 1.47,
+          "puesto": 2
+        },
+        {
+          "transportadora": "Transportadora B",
+          "entregas": 257,
+          "dias_promedio": 1.6,
+          "puesto": 3
+        },
+        {
+          "transportadora": "Transportadora C",
+          "entregas": 238,
+          "dias_promedio": 1.71,
+          "puesto": 4
+        },
+        {
+          "transportadora": "Transportadora E",
+          "entregas": 178,
+          "dias_promedio": 1.75,
+          "puesto": 5
+        },
+        {
+          "transportadora": "Transportadora D",
+          "entregas": 224,
+          "dias_promedio": 1.87,
+          "puesto": 6
+        },
+        {
+          "transportadora": "Transportadora F",
+          "entregas": 112,
+          "dias_promedio": 2.17,
+          "puesto": 7
+        }
+      ]
+    },
+    {
+      "ruta": "Bogotá → Medellín",
+      "origen": "Bogotá",
+      "destino": "Medellín",
+      "entregas": 975,
+      "transportadoras": [
+        {
+          "transportadora": "Transportadora A",
+          "entregas": 203,
+          "dias_promedio": 1.46,
+          "puesto": 1
+        },
+        {
+          "transportadora": "Transportadora G",
+          "entregas": 113,
+          "dias_promedio": 1.53,
+          "puesto": 2
+        },
+        {
+          "transportadora": "Transportadora B",
+          "entregas": 186,
+          "dias_promedio": 1.64,
+          "puesto": 3
+        },
+        {
+          "transportadora": "Transportadora C",
+          "entregas": 178,
+          "dias_promedio": 1.69,
+          "puesto": 4
+        },
+        {
+          "transportadora": "Transportadora E",
+          "entregas": 90,
+          "dias_promedio": 1.71,
+          "puesto": 5
+        },
+        {
+          "transportadora": "Transportadora D",
+          "entregas": 139,
+          "dias_promedio": 1.86,
+          "puesto": 6
+        },
+        {
+          "transportadora": "Transportadora F",
+          "entregas": 66,
+          "dias_promedio": 2.04,
+          "puesto": 7
+        }
+      ]
+    },
+    {
+      "ruta": "Medellín → Bogotá",
+      "origen": "Medellín",
+      "destino": "Bogotá",
+      "entregas": 881,
+      "transportadoras": [
+        {
+          "transportadora": "Transportadora G",
+          "entregas": 95,
+          "dias_promedio": 1.4,
+          "puesto": 1
+        },
+        {
+          "transportadora": "Transportadora A",
+          "entregas": 189,
+          "dias_promedio": 1.43,
+          "puesto": 2
+        },
+        {
+          "transportadora": "Transportadora B",
+          "entregas": 140,
+          "dias_promedio": 1.64,
+          "puesto": 3
+        },
+        {
+          "transportadora": "Transportadora C",
+          "entregas": 158,
+          "dias_promedio": 1.75,
+          "puesto": 4
+        },
+        {
+          "transportadora": "Transportadora D",
+          "entregas": 132,
+          "dias_promedio": 1.89,
+          "puesto": 5
+        },
+        {
+          "transportadora": "Transportadora E",
+          "entregas": 100,
+          "dias_promedio": 1.89,
+          "puesto": 5
+        },
+        {
+          "transportadora": "Transportadora F",
+          "entregas": 67,
+          "dias_promedio": 2.02,
+          "puesto": 7
+        }
+      ]
+    },
+    {
+      "ruta": "Bogotá → Cali",
+      "origen": "Bogotá",
+      "destino": "Cali",
+      "entregas": 703,
+      "transportadoras": [
+        {
+          "transportadora": "Transportadora G",
+          "entregas": 59,
+          "dias_promedio": 1.47,
+          "puesto": 1
+        },
+        {
+          "transportadora": "Transportadora A",
+          "entregas": 166,
+          "dias_promedio": 1.5,
+          "puesto": 2
+        },
+        {
+          "transportadora": "Transportadora B",
+          "entregas": 114,
+          "dias_promedio": 1.63,
+          "puesto": 3
+        },
+        {
+          "transportadora": "Transportadora C",
+          "entregas": 116,
+          "dias_promedio": 1.75,
+          "puesto": 4
+        },
+        {
+          "transportadora": "Transportadora D",
+          "entregas": 108,
+          "dias_promedio": 1.85,
+          "puesto": 5
+        },
+        {
+          "transportadora": "Transportadora E",
+          "entregas": 86,
+          "dias_promedio": 1.87,
+          "puesto": 6
+        },
+        {
+          "transportadora": "Transportadora F",
+          "entregas": 54,
+          "dias_promedio": 2.04,
+          "puesto": 7
+        }
+      ]
+    },
+    {
+      "ruta": "Cali → Bogotá",
+      "origen": "Cali",
+      "destino": "Bogotá",
+      "entregas": 616,
+      "transportadoras": [
+        {
+          "transportadora": "Transportadora G",
+          "entregas": 60,
+          "dias_promedio": 1.38,
+          "puesto": 1
+        },
+        {
+          "transportadora": "Transportadora A",
+          "entregas": 135,
+          "dias_promedio": 1.45,
+          "puesto": 2
+        },
+        {
+          "transportadora": "Transportadora B",
+          "entregas": 113,
+          "dias_promedio": 1.59,
+          "puesto": 3
+        },
+        {
+          "transportadora": "Transportadora C",
+          "entregas": 92,
+          "dias_promedio": 1.68,
+          "puesto": 4
+        },
+        {
+          "transportadora": "Transportadora D",
+          "entregas": 94,
+          "dias_promedio": 1.71,
+          "puesto": 5
+        },
+        {
+          "transportadora": "Transportadora E",
+          "entregas": 73,
+          "dias_promedio": 1.76,
+          "puesto": 6
+        },
+        {
+          "transportadora": "Transportadora F",
+          "entregas": 49,
+          "dias_promedio": 2.05,
+          "puesto": 7
+        }
+      ]
+    },
+    {
+      "ruta": "Bogotá → Ibagué",
+      "origen": "Bogotá",
+      "destino": "Ibagué",
+      "entregas": 568,
+      "transportadoras": [
+        {
+          "transportadora": "Transportadora G",
+          "entregas": 52,
+          "dias_promedio": 2.08,
+          "puesto": 1
+        },
+        {
+          "transportadora": "Transportadora A",
+          "entregas": 120,
+          "dias_promedio": 2.11,
+          "puesto": 2
+        },
+        {
+          "transportadora": "Transportadora B",
+          "entregas": 96,
+          "dias_promedio": 2.19,
+          "puesto": 3
+        },
+        {
+          "transportadora": "Transportadora E",
+          "entregas": 73,
+          "dias_promedio": 2.34,
+          "puesto": 4
+        },
+        {
+          "transportadora": "Transportadora C",
+          "entregas": 83,
+          "dias_promedio": 2.47,
+          "puesto": 5
+        },
+        {
+          "transportadora": "Transportadora F",
+          "entregas": 51,
+          "dias_promedio": 2.67,
+          "puesto": 6
+        },
+        {
+          "transportadora": "Transportadora D",
+          "entregas": 93,
+          "dias_promedio": 2.77,
+          "puesto": 7
+        }
+      ]
+    },
+    {
+      "ruta": "Bogotá → Barranquilla",
+      "origen": "Bogotá",
+      "destino": "Barranquilla",
+      "entregas": 549,
+      "transportadoras": [
+        {
+          "transportadora": "Transportadora G",
+          "entregas": 56,
+          "dias_promedio": 1.42,
+          "puesto": 1
+        },
+        {
+          "transportadora": "Transportadora A",
+          "entregas": 109,
+          "dias_promedio": 1.49,
+          "puesto": 2
+        },
+        {
+          "transportadora": "Transportadora B",
+          "entregas": 103,
+          "dias_promedio": 1.58,
+          "puesto": 3
+        },
+        {
+          "transportadora": "Transportadora C",
+          "entregas": 90,
+          "dias_promedio": 1.72,
+          "puesto": 4
+        },
+        {
+          "transportadora": "Transportadora D",
+          "entregas": 89,
+          "dias_promedio": 1.8,
+          "puesto": 5
+        },
+        {
+          "transportadora": "Transportadora F",
+          "entregas": 45,
+          "dias_promedio": 1.88,
+          "puesto": 6
+        },
+        {
+          "transportadora": "Transportadora E",
+          "entregas": 57,
+          "dias_promedio": 1.94,
+          "puesto": 7
+        }
+      ]
+    },
+    {
+      "ruta": "Medellín → Medellín",
+      "origen": "Medellín",
+      "destino": "Medellín",
+      "entregas": 541,
+      "transportadoras": [
+        {
+          "transportadora": "Transportadora G",
+          "entregas": 50,
+          "dias_promedio": 1.39,
+          "puesto": 1
+        },
+        {
+          "transportadora": "Transportadora A",
+          "entregas": 126,
+          "dias_promedio": 1.42,
+          "puesto": 2
+        },
+        {
+          "transportadora": "Transportadora B",
+          "entregas": 98,
+          "dias_promedio": 1.62,
+          "puesto": 3
+        },
+        {
+          "transportadora": "Transportadora D",
+          "entregas": 86,
+          "dias_promedio": 1.7,
+          "puesto": 4
+        },
+        {
+          "transportadora": "Transportadora E",
+          "entregas": 55,
+          "dias_promedio": 1.7,
+          "puesto": 4
+        },
+        {
+          "transportadora": "Transportadora C",
+          "entregas": 89,
+          "dias_promedio": 1.71,
+          "puesto": 6
+        },
+        {
+          "transportadora": "Transportadora F",
+          "entregas": 37,
+          "dias_promedio": 2.1,
+          "puesto": 7
+        }
+      ]
+    },
+    {
+      "ruta": "Bogotá → Cartagena",
+      "origen": "Bogotá",
+      "destino": "Cartagena",
+      "entregas": 488,
+      "transportadoras": [
+        {
+          "transportadora": "Transportadora A",
+          "entregas": 120,
+          "dias_promedio": 1.45,
+          "puesto": 1
+        },
+        {
+          "transportadora": "Transportadora G",
+          "entregas": 45,
+          "dias_promedio": 1.5,
+          "puesto": 2
+        },
+        {
+          "transportadora": "Transportadora B",
+          "entregas": 78,
+          "dias_promedio": 1.62,
+          "puesto": 3
+        },
+        {
+          "transportadora": "Transportadora C",
+          "entregas": 74,
+          "dias_promedio": 1.71,
+          "puesto": 4
+        },
+        {
+          "transportadora": "Transportadora E",
+          "entregas": 76,
+          "dias_promedio": 1.74,
+          "puesto": 5
+        },
+        {
+          "transportadora": "Transportadora D",
+          "entregas": 73,
+          "dias_promedio": 2.03,
+          "puesto": 6
+        },
+        {
+          "transportadora": "Transportadora F",
+          "entregas": 22,
+          "dias_promedio": 2.1,
+          "puesto": 7
+        }
+      ]
+    },
+    {
+      "ruta": "Bogotá → Bucaramanga",
+      "origen": "Bogotá",
+      "destino": "Bucaramanga",
+      "entregas": 452,
+      "transportadoras": [
+        {
+          "transportadora": "Transportadora G",
+          "entregas": 45,
+          "dias_promedio": 1.4,
+          "puesto": 1
+        },
+        {
+          "transportadora": "Transportadora A",
+          "entregas": 109,
+          "dias_promedio": 1.46,
+          "puesto": 2
+        },
+        {
+          "transportadora": "Transportadora B",
+          "entregas": 79,
+          "dias_promedio": 1.61,
+          "puesto": 3
+        },
+        {
+          "transportadora": "Transportadora C",
+          "entregas": 83,
+          "dias_promedio": 1.7,
+          "puesto": 4
+        },
+        {
+          "transportadora": "Transportadora D",
+          "entregas": 67,
+          "dias_promedio": 1.78,
+          "puesto": 5
+        },
+        {
+          "transportadora": "Transportadora E",
+          "entregas": 38,
+          "dias_promedio": 1.79,
+          "puesto": 6
+        },
+        {
+          "transportadora": "Transportadora F",
+          "entregas": 31,
+          "dias_promedio": 2.16,
+          "puesto": 7
+        }
+      ]
+    }
+  ],
+  "flete_vs_venta": {
+    "meta_pct": 1.0,
+    "general": {
+      "guias": 19924,
+      "guias_en_rojo": 3929,
+      "pct_en_rojo": 19.72,
+      "flete_pct_venta": 0.62,
+      "pesos_sobre_la_meta": 82780623
+    },
+    "por_transportadora": [
+      {
+        "transportadora": "Transportadora F",
+        "guias": 1881,
+        "guias_en_rojo": 687,
+        "pct_en_rojo": 36.52,
+        "flete_pct_venta": 1.02,
+        "pesos_sobre_la_meta": 23996212
+      },
+      {
+        "transportadora": "Transportadora E",
+        "guias": 2464,
+        "guias_en_rojo": 673,
+        "pct_en_rojo": 27.31,
+        "flete_pct_venta": 0.78,
+        "pesos_sobre_la_meta": 18387992
+      },
+      {
+        "transportadora": "Transportadora G",
+        "guias": 1850,
+        "guias_en_rojo": 324,
+        "pct_en_rojo": 17.51,
+        "flete_pct_venta": 0.58,
+        "pesos_sobre_la_meta": 4795628
+      },
+      {
+        "transportadora": "Transportadora C",
+        "guias": 3168,
+        "guias_en_rojo": 534,
+        "pct_en_rojo": 16.86,
+        "flete_pct_venta": 0.54,
+        "pesos_sobre_la_meta": 8935096
+      },
+      {
+        "transportadora": "Transportadora B",
+        "guias": 3405,
+        "guias_en_rojo": 563,
+        "pct_en_rojo": 16.53,
+        "flete_pct_venta": 0.55,
+        "pesos_sobre_la_meta": 8687184
+      },
+      {
+        "transportadora": "Transportadora D",
+        "guias": 2928,
+        "guias_en_rojo": 479,
+        "pct_en_rojo": 16.36,
+        "flete_pct_venta": 0.53,
+        "pesos_sobre_la_meta": 7867691
+      },
+      {
+        "transportadora": "Transportadora A",
+        "guias": 4228,
+        "guias_en_rojo": 669,
+        "pct_en_rojo": 15.82,
+        "flete_pct_venta": 0.55,
+        "pesos_sobre_la_meta": 10110820
+      }
+    ],
+    "costo_kg_por_destino": [
+      {
+        "tipo_destino": "principal",
+        "transportadora": "Transportadora A",
+        "guias": 2745,
+        "costo_kg": 1108
+      },
+      {
+        "tipo_destino": "principal",
+        "transportadora": "Transportadora B",
+        "guias": 2164,
+        "costo_kg": 1062
+      },
+      {
+        "tipo_destino": "principal",
+        "transportadora": "Transportadora C",
+        "guias": 2055,
+        "costo_kg": 1031
+      },
+      {
+        "tipo_destino": "principal",
+        "transportadora": "Transportadora D",
+        "guias": 1861,
+        "costo_kg": 978
+      },
+      {
+        "tipo_destino": "principal",
+        "transportadora": "Transportadora E",
+        "guias": 1372,
+        "costo_kg": 1148
+      },
+      {
+        "tipo_destino": "principal",
+        "transportadora": "Transportadora F",
+        "guias": 931,
+        "costo_kg": 1343
+      },
+      {
+        "tipo_destino": "principal",
+        "transportadora": "Transportadora G",
+        "guias": 1221,
+        "costo_kg": 1197
+      },
+      {
+        "tipo_destino": "intermedia",
+        "transportadora": "Transportadora A",
+        "guias": 1256,
+        "costo_kg": 1668
+      },
+      {
+        "tipo_destino": "intermedia",
+        "transportadora": "Transportadora B",
+        "guias": 989,
+        "costo_kg": 1593
+      },
+      {
+        "tipo_destino": "intermedia",
+        "transportadora": "Transportadora C",
+        "guias": 858,
+        "costo_kg": 1550
+      },
+      {
+        "tipo_destino": "intermedia",
+        "transportadora": "Transportadora D",
+        "guias": 831,
+        "costo_kg": 1443
+      },
+      {
+        "tipo_destino": "intermedia",
+        "transportadora": "Transportadora E",
+        "guias": 598,
+        "costo_kg": 1722
+      },
+      {
+        "tipo_destino": "intermedia",
+        "transportadora": "Transportadora F",
+        "guias": 445,
+        "costo_kg": 2013
+      },
+      {
+        "tipo_destino": "intermedia",
+        "transportadora": "Transportadora G",
+        "guias": 549,
+        "costo_kg": 1801
+      },
+      {
+        "tipo_destino": "apartada",
+        "transportadora": "Transportadora A",
+        "guias": 227,
+        "costo_kg": 5010
+      },
+      {
+        "tipo_destino": "apartada",
+        "transportadora": "Transportadora B",
+        "guias": 252,
+        "costo_kg": 4729
+      },
+      {
+        "tipo_destino": "apartada",
+        "transportadora": "Transportadora C",
+        "guias": 255,
+        "costo_kg": 4550
+      },
+      {
+        "tipo_destino": "apartada",
+        "transportadora": "Transportadora D",
+        "guias": 236,
+        "costo_kg": 4258
+      },
+      {
+        "tipo_destino": "apartada",
+        "transportadora": "Transportadora E",
+        "guias": 494,
+        "costo_kg": 5294
+      },
+      {
+        "tipo_destino": "apartada",
+        "transportadora": "Transportadora F",
+        "guias": 505,
+        "costo_kg": 6162
+      },
+      {
+        "tipo_destino": "apartada",
+        "transportadora": "Transportadora G",
+        "guias": 80,
+        "costo_kg": 5870
+      }
+    ]
   }
 }

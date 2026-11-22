@@ -12,6 +12,11 @@ exacta y controlable por parámetro:
    estado reportado (como al cruzar el envío con su historial de estados).
 2. Espacios al inicio de la llave ``guia`` en una parte de las filas.
 
+Cada guía trae además su valor de venta, el valor del flete y el peso, para el
+análisis de flete vs venta (meta: que ningún flete supere el 1 % de la venta).
+Estas columnas se sortean con un generador aparte, así que agregarlas no cambia
+ninguna de las demás columnas ni sus agregados.
+
 Uso:
     python scripts/generate_sample_data.py
     python scripts/generate_sample_data.py --seed 7 --envios 5000 --output-dir tmp/
@@ -61,6 +66,9 @@ COLUMNAS: tuple[str, ...] = (
     "fecha_entrega",
     "estado",
     "es_reexpedicion",
+    "valor_venta",
+    "valor_flete",
+    "peso_kg",
 )
 
 ESQUEMA_PARQUET = pa.schema(
@@ -76,6 +84,9 @@ ESQUEMA_PARQUET = pa.schema(
         pa.field("fecha_entrega", pa.timestamp("ms")),
         pa.field("estado", pa.string(), nullable=False),
         pa.field("es_reexpedicion", pa.bool_(), nullable=False),
+        pa.field("valor_venta", pa.int64()),
+        pa.field("valor_flete", pa.int64()),
+        pa.field("peso_kg", pa.float64()),
     ]
 )
 
@@ -108,6 +119,8 @@ class PerfilTransportadora:
     prob_devolucion: float
     factor_duplicados: float
     """Cuánto más probable es que sus guías lleguen con varios estados."""
+    factor_tarifa: float = 1.0
+    """Multiplicador de la tarifa por kg frente a la tarifa base del destino."""
 
 
 @dataclass(frozen=True)
@@ -120,17 +133,20 @@ class TipoDestino:
     dias_promesa: int
     prob_reexpedicion: float
     es_apartado: bool = False
+    tarifa_kg: float = 1_000.0
+    """Tarifa base del flete en pesos por kg."""
 
 
 TRANSPORTADORAS: tuple[PerfilTransportadora, ...] = (
-    # nombre, participación, afinidad apartados, h recogida, mediana, sigma, devolución, duplicados
-    PerfilTransportadora("Transportadora A", 0.22, 0.6, 10.0, 0.62, 0.28, 0.010, 1.0),
-    PerfilTransportadora("Transportadora B", 0.18, 0.8, 14.0, 0.68, 0.30, 0.015, 1.0),
-    PerfilTransportadora("Transportadora C", 0.16, 1.0, 18.0, 0.72, 0.34, 0.020, 1.0),
-    PerfilTransportadora("Transportadora D", 0.15, 1.0, 16.0, 0.78, 0.36, 0.025, 4.0),
-    PerfilTransportadora("Transportadora E", 0.11, 3.0, 24.0, 0.74, 0.40, 0.030, 1.0),
-    PerfilTransportadora("Transportadora F", 0.08, 4.0, 30.0, 0.84, 0.42, 0.040, 1.0),
-    PerfilTransportadora("Transportadora G", 0.10, 0.5, 8.0, 0.60, 0.32, 0.012, 1.0),
+    # nombre, participación, afinidad apartados, h recogida, mediana, sigma, devolución,
+    # duplicados, factor de tarifa
+    PerfilTransportadora("Transportadora A", 0.22, 0.6, 10.0, 0.62, 0.28, 0.010, 1.0, 1.05),
+    PerfilTransportadora("Transportadora B", 0.18, 0.8, 14.0, 0.68, 0.30, 0.015, 1.0, 1.00),
+    PerfilTransportadora("Transportadora C", 0.16, 1.0, 18.0, 0.72, 0.34, 0.020, 1.0, 0.95),
+    PerfilTransportadora("Transportadora D", 0.15, 1.0, 16.0, 0.78, 0.36, 0.025, 4.0, 0.90),
+    PerfilTransportadora("Transportadora E", 0.11, 3.0, 24.0, 0.74, 0.40, 0.030, 1.0, 1.10),
+    PerfilTransportadora("Transportadora F", 0.08, 4.0, 30.0, 0.84, 0.42, 0.040, 1.0, 1.30),
+    PerfilTransportadora("Transportadora G", 0.10, 0.5, 8.0, 0.60, 0.32, 0.012, 1.0, 1.15),
 )
 
 ORIGENES: tuple[tuple[str, float], ...] = (
@@ -157,6 +173,7 @@ TIPOS_DESTINO: tuple[TipoDestino, ...] = (
         participacion=0.62,
         dias_promesa=2,
         prob_reexpedicion=0.0,
+        tarifa_kg=950.0,
     ),
     TipoDestino(
         nombre="intermedia",
@@ -177,6 +194,7 @@ TIPOS_DESTINO: tuple[TipoDestino, ...] = (
         participacion=0.28,
         dias_promesa=3,
         prob_reexpedicion=0.03,
+        tarifa_kg=1_500.0,
     ),
     TipoDestino(
         nombre="apartada",
@@ -198,6 +216,7 @@ TIPOS_DESTINO: tuple[TipoDestino, ...] = (
         dias_promesa=6,
         prob_reexpedicion=0.70,
         es_apartado=True,
+        tarifa_kg=3_800.0,
     ),
 )
 
@@ -219,6 +238,23 @@ PROB_FILAS_EXTRA = (0.7, 0.3)
 """Probabilidad de que una guía duplicada tenga 1 o 2 filas adicionales."""
 PROB_ESPACIOS = (0.8, 0.2)
 """Probabilidad de que la llave sucia lleve 1 o 2 espacios al inicio."""
+
+# Venta, flete y peso (pesos colombianos sintéticos).
+MEDIANA_VENTA = 2_500_000
+SIGMA_VENTA = 0.9
+VENTA_MINIMA = 150_000
+MEDIANA_VALOR_POR_KG = 300_000
+"""Valor de la mercancía por kg: los medicamentos valen mucho por poco peso."""
+SIGMA_VALOR_POR_KG = 0.5
+PESO_MINIMO_KG = 0.5
+FLETE_MINIMO = 7_000
+"""Lo mínimo que cobra una transportadora por guía: castiga a las facturas pequeñas."""
+SIGMA_FLETE = 0.15
+RECARGO_REEXPEDICION = 0.35
+META_FLETE_PCT = 1.0
+"""Meta: el flete no debe superar el 1 % del valor de la venta que transporta."""
+SEMILLA_VALORES = 1
+"""Las columnas de valores usan su propio generador, con semilla ``[semilla, 1]``."""
 
 
 @dataclass(frozen=True)
@@ -411,6 +447,36 @@ def _aplicar_corte(
     )
 
 
+def _sortear_valores(
+    rng: np.random.Generator,
+    tipo: np.ndarray,
+    transportadora: np.ndarray,
+    es_reexpedicion: np.ndarray,
+) -> dict[str, np.ndarray]:
+    """Valor de venta, peso y flete de cada guía.
+
+    El peso sale del valor de la venta y de un valor por kg aleatorio. El flete es
+    peso por tarifa (según destino y transportadora), con un mínimo por guía, algo
+    de ruido y un recargo si hay reexpedición. Así, las facturas pequeñas (por el
+    flete mínimo) y los destinos apartados (por la tarifa) son los que más se pasan
+    de la meta del 1 %.
+    """
+    n = len(tipo)
+    venta = np.maximum(VENTA_MINIMA, rng.lognormal(np.log(MEDIANA_VENTA), SIGMA_VENTA, n))
+    venta = np.round(venta, -2)
+    valor_por_kg = rng.lognormal(np.log(MEDIANA_VALOR_POR_KG), SIGMA_VALOR_POR_KG, n)
+    peso = np.maximum(PESO_MINIMO_KG, np.round(venta / valor_por_kg, 1))
+    tarifa = np.array([t.tarifa_kg for t in TIPOS_DESTINO])[tipo] * _por_transportadora(
+        "factor_tarifa", transportadora
+    )
+    flete = (
+        np.maximum(FLETE_MINIMO, peso * tarifa)
+        * rng.lognormal(0.0, SIGMA_FLETE, n)
+        * np.where(es_reexpedicion, 1 + RECARGO_REEXPEDICION, 1.0)
+    )
+    return {"valor_venta": venta, "valor_flete": np.round(flete, -2), "peso_kg": peso}
+
+
 def _generar_envios_limpios(rng: np.random.Generator, cfg: Configuracion) -> pd.DataFrame:
     """Una fila por guía, ya con estado al corte y columnas internas (prefijo ``_``)."""
     n = cfg.envios
@@ -428,6 +494,24 @@ def _generar_envios_limpios(rng: np.random.Generator, cfg: Configuracion) -> pd.
     se_devuelve = rng.random(n) < _por_transportadora("prob_devolucion", transportadora)
     al_corte = _aplicar_corte(fechas, se_devuelve, cfg.instante_corte)
 
+    # Generador aparte: agregar estas columnas no cambia ninguna de las anteriores.
+    rng_valores = np.random.default_rng([cfg.semilla, SEMILLA_VALORES])
+    valores = _sortear_valores(rng_valores, tipo, transportadora, es_reexpedicion)
+    # La venta y el peso se conocen al facturar y el flete al despachar; antes, NULL.
+    facturado = al_corte["fecha_factura"].notna().to_numpy()
+    despachado = al_corte["fecha_despacho"].notna().to_numpy()
+    montos = pd.DataFrame(
+        {
+            "valor_venta": pd.array(
+                np.where(facturado, valores["valor_venta"], np.nan), dtype="Int64"
+            ),
+            "valor_flete": pd.array(
+                np.where(despachado, valores["valor_flete"], np.nan), dtype="Int64"
+            ),
+            "peso_kg": np.where(facturado, valores["peso_kg"], np.nan),
+        }
+    )
+
     base = pd.DataFrame(
         {
             "guia": guia,
@@ -439,7 +523,7 @@ def _generar_envios_limpios(rng: np.random.Generator, cfg: Configuracion) -> pd.
             "_factor_duplicados": _por_transportadora("factor_duplicados", transportadora),
         }
     )
-    return pd.concat([base, al_corte], axis=1)
+    return pd.concat([base, al_corte, montos], axis=1)
 
 
 # --------------------------------------------------------------------------- #
@@ -659,6 +743,137 @@ def resumir_reexpediciones(unicos: pd.DataFrame, top: int = 10) -> dict[str, Any
     }
 
 
+TIPO_POR_CIUDAD: dict[str, str] = {
+    ciudad: tipo.nombre for tipo in TIPOS_DESTINO for ciudad in tipo.ciudades
+}
+
+
+def _flete_por_grupo(despachados: pd.DataFrame, grupo: pd.Series | None) -> pd.DataFrame:
+    """Guías, guías en rojo, % flete/venta y pesos sobre la meta, por grupo."""
+    tope = despachados["valor_venta"] * META_FLETE_PCT / 100
+    en_rojo = despachados["valor_flete"] > tope
+    tabla = pd.DataFrame(
+        {
+            "guias": 1,
+            "guias_en_rojo": en_rojo,
+            "flete": despachados["valor_flete"],
+            "venta": despachados["valor_venta"],
+            "exceso": (despachados["valor_flete"] - tope).where(en_rojo, 0),
+        }
+    ).astype(float)
+    sumas = tabla.groupby(grupo).sum() if grupo is not None else tabla.sum().to_frame().T
+    return sumas.assign(
+        pct_en_rojo=100 * sumas["guias_en_rojo"] / sumas["guias"],
+        flete_pct_venta=100 * sumas["flete"] / sumas["venta"],
+    )
+
+
+def resumir_flete(unicos: pd.DataFrame) -> dict[str, Any]:
+    """Semáforo de flete vs venta (meta 1 %) y costo del flete por kg según destino.
+
+    Cuenta solo las guías despachadas, que son las que ya tienen flete.
+    """
+    despachados = unicos.loc[unicos["valor_flete"].notna()]
+
+    def fila(nombre: str | None, datos: pd.Series) -> dict[str, Any]:
+        resultado: dict[str, Any] = {"transportadora": nombre} if nombre else {}
+        return resultado | {
+            "guias": int(datos["guias"]),
+            "guias_en_rojo": int(datos["guias_en_rojo"]),
+            "pct_en_rojo": round(float(datos["pct_en_rojo"]), 2),
+            "flete_pct_venta": round(float(datos["flete_pct_venta"]), 2),
+            "pesos_sobre_la_meta": round(float(datos["exceso"])),
+        }
+
+    general = _flete_por_grupo(despachados, None).iloc[0]
+    por_transportadora = _flete_por_grupo(despachados, despachados["transportadora"])
+    por_transportadora = por_transportadora.sort_values("pct_en_rojo", ascending=False)
+
+    tipo = despachados["ciudad_destino"].map(TIPO_POR_CIUDAD).rename("tipo_destino")
+    por_kg = (
+        despachados.assign(tipo_destino=tipo)
+        .groupby(["tipo_destino", "transportadora"])
+        .agg(guias=("guia", "size"), flete=("valor_flete", "sum"), peso=("peso_kg", "sum"))
+    )
+    orden_tipos = [t.nombre for t in TIPOS_DESTINO]
+    return {
+        "meta_pct": META_FLETE_PCT,
+        "general": fila(None, general),
+        "por_transportadora": [
+            fila(str(nombre), datos) for nombre, datos in por_transportadora.iterrows()
+        ],
+        "costo_kg_por_destino": [
+            {
+                "tipo_destino": tipo_destino,
+                "transportadora": nombre,
+                "guias": int(datos["guias"]),
+                "costo_kg": round(float(datos["flete"] / datos["peso"])),
+            }
+            for (tipo_destino, nombre), datos in sorted(
+                por_kg.iterrows(), key=lambda par: (orden_tipos.index(par[0][0]), par[0][1])
+            )
+        ],
+    }
+
+
+def resumir_rutas(
+    unicos: pd.DataFrame, top: int = 10, min_entregas: int = 20
+) -> list[dict[str, Any]]:
+    """Días de despacho a entrega por ruta y transportadora, en rutas compartidas.
+
+    Solo cuentan las transportadoras con al menos ``min_entregas`` entregas en la
+    ruta, y solo las rutas que atienden dos o más: así la comparación es entre
+    quienes van al mismo lugar. Devuelve las ``top`` rutas con más entregas.
+    Es lo mismo que calcula ``scripts/queries/07_transportadoras_misma_ruta.sql``.
+    """
+    entregados = unicos.loc[unicos["fecha_entrega"].notna()]
+    dias = _horas_entre(entregados["fecha_despacho"], entregados["fecha_entrega"]) / 24
+    ruta = (entregados["ciudad_origen"] + " → " + entregados["ciudad_destino"]).rename("ruta")
+    tabla = (
+        pd.DataFrame({"ruta": ruta, "transportadora": entregados["transportadora"], "dias": dias})
+        .groupby(["ruta", "transportadora"])["dias"]
+        .agg(entregas="size", dias_promedio="mean")
+        .reset_index()
+    )
+    tabla = tabla.loc[tabla["entregas"] >= min_entregas]
+    por_ruta = tabla.groupby("ruta").agg(
+        transportadoras=("transportadora", "size"), entregas=("entregas", "sum")
+    )
+    elegidas = (
+        por_ruta.loc[por_ruta["transportadoras"] >= 2]
+        .sort_values(["entregas"], ascending=False, kind="stable")
+        .head(top)
+        .index
+    )
+
+    resultado = []
+    for nombre in elegidas:
+        filas = tabla.loc[tabla["ruta"] == nombre].sort_values(["dias_promedio", "transportadora"])
+        origen, destino = nombre.split(" → ")
+        resultado.append(
+            {
+                "ruta": nombre,
+                "origen": origen,
+                "destino": destino,
+                "entregas": int(filas["entregas"].sum()),
+                "transportadoras": [
+                    {
+                        "transportadora": f.transportadora,
+                        "entregas": int(f.entregas),
+                        "dias_promedio": round(float(f.dias_promedio), 2),
+                        "puesto": int(puesto),
+                    }
+                    for f, puesto in zip(
+                        filas.itertuples(),
+                        filas["dias_promedio"].round(2).rank(method="min").tolist(),
+                        strict=True,
+                    )
+                ],
+            }
+        )
+    return resultado
+
+
 def resumir_calidad(envios: pd.DataFrame, cfg: Configuracion) -> dict[str, Any]:
     """Cuenta exacta de los problemas sembrados, para poder verificarlos en SQL."""
     limpia = envios["guia"].str.strip()
@@ -696,6 +911,8 @@ def construir_resumen(envios: pd.DataFrame, cfg: Configuracion) -> dict[str, Any
         "tiempo_promedio_por_etapa": resumir_etapas(unicos),
         "volumen_por_mes": resumir_volumen_mensual(unicos),
         "reexpediciones": resumir_reexpediciones(unicos),
+        "tiempos_por_ruta": resumir_rutas(unicos),
+        "flete_vs_venta": resumir_flete(unicos),
     }
 
 

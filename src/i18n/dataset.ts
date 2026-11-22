@@ -73,4 +73,25 @@ export const envioColumns: { name: string; type: string; description: Record<Lan
       en: 'The destination needs a second carrier.',
     },
   },
+  {
+    name: 'valor_venta',
+    type: 'BIGINT',
+    description: {
+      es: 'Valor de la factura en pesos. NULL si aún no se factura.',
+      en: 'Invoice value in Colombian pesos. NULL if not invoiced yet.',
+    },
+  },
+  {
+    name: 'valor_flete',
+    type: 'BIGINT',
+    description: {
+      es: 'Lo que cobra la transportadora, en pesos. NULL si aún no se despacha. Meta: no superar el 1 % de la venta.',
+      en: 'What the carrier charges, in pesos. NULL if not dispatched yet. Target: no more than 1% of the sale.',
+    },
+  },
+  {
+    name: 'peso_kg',
+    type: 'DOUBLE',
+    description: { es: 'Peso del envío en kg.', en: 'Shipment weight in kg.' },
+  },
 ];

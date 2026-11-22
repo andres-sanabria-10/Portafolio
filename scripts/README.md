@@ -46,7 +46,7 @@ sistema: la "fecha de generación" del JSON es la fecha de corte.
 
 | Archivo | Contenido |
 | --- | --- |
-| `public/data/envios_sinteticos.parquet` | 23.105 filas de 20.000 guías (ZSTD, unos 400 KiB). Es lo que consulta el playground. |
+| `public/data/envios_sinteticos.parquet` | 23.105 filas de 20.000 guías (ZSTD, unos 550 KiB). Es lo que consulta el playground. |
 | `public/data/envios_resumen.json` | Agregados ya limpios para gráficos estáticos. |
 
 Claves de `envios_resumen.json`:
@@ -59,6 +59,12 @@ Claves de `envios_resumen.json`:
 - `tiempo_promedio_por_etapa`: horas promedio por etapa, general y por transportadora.
 - `volumen_por_mes`: envíos solicitados, entregados y OTD por mes.
 - `reexpediciones`: total, porcentaje y los 10 destinos donde más se concentran.
+- `tiempos_por_ruta`: las 10 rutas compartidas (2 o más transportadoras con al menos
+  20 entregas) con más volumen, y los días de despacho a entrega de cada transportadora
+  con su puesto dentro de la ruta.
+- `flete_vs_venta`: meta (1 %), semáforo general y por transportadora (guías en rojo,
+  % de flete sobre la venta, pesos sobre la meta) y costo del flete por kg según tipo
+  de destino y transportadora.
 
 ## Diccionario de datos
 
@@ -78,6 +84,9 @@ guías duplicadas a propósito tienen dos o tres.
 | `fecha_entrega` | timestamp | sí | Cuándo se entregó. Nula si sigue en camino o se devolvió. |
 | `estado` | texto | no | `solicitado`, `facturado`, `despachado`, `en_transito`, `novedad`, `entregado` o `devuelto`. |
 | `es_reexpedicion` | booleano | no | El destino requiere una segunda transportadora. |
+| `valor_venta` | entero (COP) | sí | Valor de la factura que transporta la guía. Nulo si aún no se factura. |
+| `valor_flete` | entero (COP) | sí | Lo que cobra la transportadora por la guía. Nulo si aún no se despacha. |
+| `peso_kg` | decimal | sí | Peso del envío. Nulo si aún no se factura. |
 
 Reglas que cumple el dato:
 
@@ -91,6 +100,14 @@ Reglas que cumple el dato:
   tránsito, dispersión y devoluciones. Las reexpediciones se concentran en los
   destinos apartados (cerca del 70 % de esos envíos) y alargan el tránsito.
 - Simplificaciones: no hay festivos y el tránsito corre también en fin de semana.
+- **Flete vs venta.** El peso sale del valor de la venta (los medicamentos valen
+  mucho por poco peso) y el flete es peso × tarifa por kg según el tipo de destino
+  (950, 1.500 o 3.800 pesos) y la transportadora, con un mínimo de 7.000 pesos por
+  guía, algo de ruido y un recargo del 35 % si hay reexpedición. Con la semilla 42,
+  el 19,7 % de las guías despachadas se pasa de la meta del 1 %: sobre todo las
+  facturas pequeñas (por el flete mínimo) y los destinos apartados (por la tarifa).
+  Estas tres columnas usan su propio generador (semilla `[semilla, 1]`), así que
+  agregarlas no cambió ninguna otra columna ni agregado.
 
 ## Problemas de calidad sembrados
 
@@ -132,10 +149,12 @@ Cada archivo es una sola sentencia y se limpia a sí misma.
 | `04_ultimo_estado_por_guia.sql` | `ROW_NUMBER()` para quedarse con el último estado. |
 | `05_variacion_mensual_lag.sql` | `LAG()` para la variación mensual de volumen y OTD. |
 | `06_error_por_duplicados.sql` | OTD contando duplicados frente al OTD correcto. |
+| `07_transportadoras_misma_ruta.sql` | Días por ruta y transportadora, solo en rutas compartidas, con `RANK()` dentro de cada ruta. |
+| `08_semaforo_flete_venta.sql` | Semáforo de flete vs venta (meta 1 %): % de guías en rojo y pesos sobre la meta por transportadora. |
 
 ## Pruebas (`scripts/tests/`)
 
 `pytest` comprueba la reproducibilidad (mismo DataFrame y mismos archivos byte a
 byte), la coherencia de fechas y estados, la proporción exacta de los problemas
 sembrados, que cada consulta SQL corre en DuckDB y que el OTD calculado en SQL
-coincide con el del JSON.
+coincide con el del JSON, igual que el semáforo de flete y los tiempos por ruta.
