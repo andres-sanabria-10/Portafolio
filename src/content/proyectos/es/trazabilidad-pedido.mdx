@@ -73,6 +73,8 @@ Haz clic en cada etapa (o recórrelas con el teclado) para ver qué datos entran
 
 **Grano de una fila por guía en `fact_envios`.** La tabla de hechos tiene exactamente una fila por guía, con las fechas de cada etapa. El historial de eventos queda aparte. Ese grano es el que evita contar dos veces una guía, como se ve en la sección de calidad de datos.
 
+**Comparar transportadoras por ruta, no por promedio general.** Cada transportadora atiende rutas distintas: una que cubre destinos lejanos o de difícil acceso siempre se vería peor en un promedio general. Por eso el tiempo de entrega se calcula por ruta (origen–destino) y transportadora, y solo se comparan transportadoras que comparten la misma ruta. Así la pregunta pasa de "¿quién es más lento?" a "¿quién es más lento yendo al mismo lugar?".
+
 **SQL Server como fuente de verdad; Power BI como presentación.** Los indicadores se calculan y se validan en SQL. Power BI los muestra y permite filtrarlos, pero si un número del tablero no coincide con la consulta, el que está mal es el tablero.
 
 ## Partes interesantes del código
@@ -176,6 +178,36 @@ Además de esa validación, el pipeline revisa en cada carga:
 
 {/* TODO(Andrés): confirmar cuáles de estas validaciones están automatizadas y cuáles se revisan a mano. */}
 
+## Del envío al costo: flete vs venta
+
+Además de los tiempos, el modelo une cada guía con la factura que transporta. Así se calcula, guía por guía, cuánto cuesta el flete frente al valor de la venta.
+
+La meta de la empresa es que ningún flete supere el **1 % del valor de lo que lleva**. Un semáforo marca en rojo las guías que se pasan y muestra la diferencia, para revisar tarifas, consolidar despachos o renegociar con la transportadora. Un segundo análisis calcula el costo del flete por kg según el destino y la transportadora.
+
+Ilustrativo, con nombres genéricos:
+
+```sql
+-- Flete frente a venta, guía por guía, con semáforo contra la meta del 1 %.
+SELECT
+    e.guia,
+    e.transportadora,
+    f.valor_venta,
+    e.valor_flete,
+    CAST(100.0 * e.valor_flete / NULLIF(f.valor_venta, 0) AS DECIMAL(6, 2)) AS flete_pct_venta,
+    CASE
+        WHEN e.valor_flete <= 0.01 * f.valor_venta THEN 'verde'
+        ELSE 'rojo'
+    END AS semaforo,
+    -- Cuánto se pasa la guía de la meta, en pesos (0 si está en verde).
+    CASE
+        WHEN e.valor_flete > 0.01 * f.valor_venta THEN e.valor_flete - 0.01 * f.valor_venta
+        ELSE 0
+    END AS exceso_sobre_meta
+FROM fact_envios AS e
+JOIN fact_facturas AS f ON f.factura_id = e.factura_id
+WHERE e.fecha_despacho IS NOT NULL;
+```
+
 ## Resultados
 
 {/* TODO: métrica real aproximada — cuántos pedidos o guías al mes cubre el pipeline. */}
@@ -184,6 +216,9 @@ Además de esa validación, el pipeline revisa en cada carga:
 
 - Por primera vez existe una línea de tiempo completa de cada envío, de la factura a la entrega, en una sola tabla.
 - El ranking de OTD por transportadora se calcula con la misma regla para las siete.
+- Tiempo promedio por ruta y transportadora, para comparar transportadoras en igualdad de condiciones.
+- Control de costos: flete vs venta por guía con semáforo y la meta de que ningún flete supere el 1 % de la venta; además, el costo del flete por kg según destino.
+- Alertas operativas: guías sin estado y guías paradas más de 5 días.
 - El indicador del tablero coincide con SQL, y esa validación quedó como parte del proceso.
 - Las reexpediciones se ven por separado, así que su demora ya no se confunde con la de los envíos directos.
 
