@@ -33,6 +33,11 @@ __pycache__/
 .ruff_cache/
 .pytest_cache/
 
+# Tableros reales de Power BI (datos de la empresa): nunca se suben al repo
+tableros/
+*.pbix
+*.pbit
+
 # Material de trabajo que no forma parte del sitio
 prompt-claude-code-portafolio.md
 foto sin fondo.jpg
