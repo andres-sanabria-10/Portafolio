@@ -5,9 +5,10 @@ import vue from '@astrojs/vue';
 import tailwindcss from '@tailwindcss/vite';
 import { defaultLang, locales } from './src/i18n/config';
 
-// Sitio de usuario de GitHub Pages: se sirve desde la raíz, sin `base`.
+// GitHub Pages con dominio propio: se sirve desde la raíz, sin `base`.
+// www.andres-felipe-sanabria.uk redirige aquí (lo hace GitHub Pages; ver README).
 export default defineConfig({
-  site: 'https://andres-sanabria-10.github.io',
+  site: 'https://andres-felipe-sanabria.uk',
   trailingSlash: 'always',
   i18n: {
     locales: [...locales],
