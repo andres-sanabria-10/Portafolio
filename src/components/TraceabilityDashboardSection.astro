@@ -1,0 +1,58 @@
+---
+import resumen from '../../public/data/envios_resumen.json';
+import type { Lang } from '../i18n/config';
+import { useTranslations } from '../i18n/utils';
+import type { DashboardLabels, FreightSummary, RouteTimes } from './vue/dashboard';
+import TraceabilityDashboard from './vue/TraceabilityDashboard.vue';
+
+/**
+ * Tablero del caso de trazabilidad para el MDX: `<TraceabilityDashboardSection lang="es" />`.
+ * Lee los agregados sintéticos de `public/data/envios_resumen.json`, que genera
+ * `scripts/generate_sample_data.py`; nada de esto viene de datos reales.
+ */
+interface Props {
+  lang: Lang;
+}
+
+const { lang } = Astro.props;
+const t = useTranslations(lang);
+
+const labels: DashboardLabels = {
+  tablist: t('dash.tablist'),
+  tabRoutes: t('dash.tabRoutes'),
+  tabFreight: t('dash.tabFreight'),
+  badge: t('dash.badge'),
+  routesIntro: t('dash.routesIntro'),
+  routesCaption: t('dash.routesCaption'),
+  route: t('dash.route'),
+  deliveries: t('dash.deliveries'),
+  fastest: t('dash.fastest'),
+  noData: t('dash.noData'),
+  days: t('dash.days'),
+  routesNote: t('dash.routesNote'),
+  freightIntro: t('dash.freightIntro'),
+  freightCaption: t('dash.freightCaption'),
+  carrier: t('dash.carrier'),
+  shipments: t('dash.shipments'),
+  red: t('dash.red'),
+  green: t('dash.green'),
+  freightOverSale: t('dash.freightOverSale'),
+  overTarget: t('dash.overTarget'),
+  costCaption: t('dash.costCaption'),
+  destination: t('dash.destination'),
+  destinationTypes: {
+    principal: t('dash.destination.principal'),
+    intermedia: t('dash.destination.intermedia'),
+    apartada: t('dash.destination.apartada'),
+  },
+  freightNote: t('dash.freightNote'),
+};
+---
+
+<TraceabilityDashboard
+  client:visible
+  routes={resumen.tiempos_por_ruta as RouteTimes[]}
+  freight={resumen.flete_vs_venta as FreightSummary}
+  lang={lang}
+  labels={labels}
+/>

@@ -31,6 +31,7 @@ linkedin_post: |
 
 import TraceabilityDiagram from '../../../components/TraceabilityDiagram.astro';
 import PlaygroundSection from '../../../components/PlaygroundSection.astro';
+import TraceabilityDashboardSection from '../../../components/TraceabilityDashboardSection.astro';
 import resumen from '../../../../public/data/envios_resumen.json';
 
 export const n = (value) => value.toLocaleString('es-CO');
@@ -207,6 +208,12 @@ FROM fact_envios AS e
 JOIN fact_facturas AS f ON f.factura_id = e.factura_id
 WHERE e.fecha_despacho IS NOT NULL;
 ```
+
+### El tablero, reproducido con datos sintéticos
+
+Las dos vistas que más uso: la matriz de tiempos por ruta y transportadora, que resalta la más rápida de cada ruta, y el semáforo de flete vs venta. *Todas las cifras son sintéticas: no son datos de ninguna empresa.*
+
+<TraceabilityDashboardSection lang="es" />
 
 ## Resultados
 
