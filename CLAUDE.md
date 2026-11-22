@@ -1,7 +1,9 @@
 # CLAUDE.md
 
 Portafolio y blog técnico de Andrés Felipe Sanabria (Analista BI → Ingeniero de Datos Jr).
-Se despliega en GitHub Pages como sitio de usuario (`andres-sanabria-10.github.io`).
+Repositorio: `andres-sanabria-10/Portafolio`. Se despliega en GitHub Pages con GitHub
+Actions en el dominio propio `https://andres-felipe-sanabria.uk` (raíz, sin `base`;
+`www` redirige a la raíz). DNS en Cloudflare en modo "DNS only"; detalles en el README.
 La especificación completa está en `prompt-claude-code-portafolio.md` (archivo local,
 fuera del repo por `.gitignore`): léela antes de empezar una fase.
 

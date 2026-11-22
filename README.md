@@ -1,6 +1,6 @@
-# andres-sanabria-10.github.io
+# Portafolio
 
-Portafolio y blog técnico de Andrés Felipe Sanabria, orientado a ingeniería de datos: casos de estudio, notas de aprendizaje y artículos. Sitio estático bilingüe (español en `/`, inglés en `/en/`) publicado en GitHub Pages: <https://andres-sanabria-10.github.io>
+Portafolio y blog técnico de Andrés Felipe Sanabria, orientado a ingeniería de datos: casos de estudio, notas de aprendizaje y artículos. Sitio estático bilingüe (español en `/`, inglés en `/en/`) publicado en GitHub Pages con dominio propio: <https://andres-felipe-sanabria.uk>
 
 > Estado: fase 1 (base). Están listos la estructura, la navegación, el i18n, los temas y el despliegue. El contenido y los componentes interactivos llegan en las fases siguientes.
 
@@ -64,6 +64,30 @@ Para activarlo por primera vez:
 2. En **Build and deployment → Source**, elige **GitHub Actions**.
 3. Haz push a `main` (o lanza el workflow *Deploy* a mano desde la pestaña **Actions**).
 
-El repositorio debe llamarse `andres-sanabria-10.github.io` para que el sitio quede en la raíz del dominio.
-
 En los pull requests, `.github/workflows/ci.yml` repite las comprobaciones y ejecuta Lighthouse CI con un mínimo de 95 en rendimiento, accesibilidad, buenas prácticas y SEO (`lighthouserc.json`).
+
+## Dominio propio
+
+El sitio se sirve en `https://andres-felipe-sanabria.uk`, en la raíz y sin `base` (`site` en `astro.config.ts`). El dominio está registrado en Cloudflare y apunta a GitHub Pages; `www.andres-felipe-sanabria.uk` redirige a la raíz.
+
+### 1. DNS en Cloudflare
+
+En **DNS → Records**, crea estos registros. Todos en modo **DNS only** (nube gris), no *Proxied*: si Cloudflare hace de proxy, GitHub no puede verificar el dominio ni emitir el certificado HTTPS.
+
+| Tipo  | Nombre | Contenido                     | Proxy    |
+| ----- | ------ | ----------------------------- | -------- |
+| A     | `@`    | `185.199.108.153`             | DNS only |
+| A     | `@`    | `185.199.109.153`             | DNS only |
+| A     | `@`    | `185.199.110.153`             | DNS only |
+| A     | `@`    | `185.199.111.153`             | DNS only |
+| CNAME | `www`  | `andres-sanabria-10.github.io` | DNS only |
+
+### 2. GitHub Pages
+
+1. En el repositorio, entra a **Settings → Pages**.
+2. En **Custom domain**, escribe `andres-felipe-sanabria.uk` (sin `www`) y pulsa **Save**. GitHub comprueba los DNS; puede tardar unos minutos.
+3. Cuando la comprobación pase y el certificado esté listo, marca **Enforce HTTPS**.
+
+Con el dominio apex configurado y el CNAME de `www`, GitHub Pages redirige `www` a la raíz automáticamente.
+
+Como el despliegue se hace con GitHub Actions, no hace falta el archivo `CNAME` en el repositorio: el dominio se guarda en la configuración de Pages.
