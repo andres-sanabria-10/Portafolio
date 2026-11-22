@@ -29,6 +29,8 @@ const proyectos = defineCollection({
       featured: z.boolean().default(false),
       repo: z.url().optional(),
       demo: z.url().optional(),
+      /** Arquitectura resumida en pasos (la tarjeta destacada del inicio la dibuja). */
+      flow: z.array(z.string()).min(2).optional(),
       cover: image().optional(),
       linkedin_post: linkedinPost,
       draft,

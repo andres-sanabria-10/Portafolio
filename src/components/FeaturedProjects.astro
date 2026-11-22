@@ -1,0 +1,185 @@
+---
+import ArrowRightIcon from '@phosphor-icons/core/assets/regular/arrow-right.svg';
+import { localeMeta, type Lang } from '../i18n/config';
+import { statusLabels } from '../i18n/ui';
+import { getRoutePath, useTranslations } from '../i18n/utils';
+import type { LocalizedItem } from '../lib/collections';
+
+/**
+ * Tarjetas de los proyectos destacados del inicio. El primero ocupa la columna
+ * izquierda entera y los otros dos se apilan a la derecha. Toda la tarjeta es
+ * clicable (el enlace del título se estira sobre ella con ::after).
+ */
+interface Props {
+  lang: Lang;
+  items: LocalizedItem<'proyectos'>[];
+}
+
+const { lang, items } = Astro.props;
+const t = useTranslations(lang);
+const MAX_CHIPS = 5;
+---
+
+<ul class="grid gap-4 lg:grid-cols-2 lg:grid-rows-2">
+  {
+    items.map(({ entry, slug, contentLang, isFallback }, index) => {
+      const { data } = entry;
+      const lead = index === 0;
+      const chips = data.stack.slice(0, MAX_CHIPS);
+      const extra = data.stack.length - chips.length;
+      return (
+        <li class:list={['flex', lead && 'lg:row-span-2']}>
+          <article
+            class:list={[
+              'project-card relative flex w-full flex-col rounded-ui border border-line bg-surface',
+              lead ? 'p-6 md:p-8' : 'p-6',
+            ]}
+            lang={isFallback ? localeMeta[contentLang].htmlLang : undefined}
+          >
+            <p class="label-mono flex items-center gap-2">
+              <span
+                class:list={[
+                  'inline-block size-2 rounded-full',
+                  data.status === 'en producción' ? 'bg-accent' : 'border border-line-strong',
+                ]}
+                aria-hidden="true"
+              />
+              {statusLabels[lang][data.status]}
+            </p>
+            <h3 class:list={['mt-4 font-semibold', lead ? 'text-2xl md:text-3xl' : 'text-xl']}>
+              <a href={getRoutePath('projects', lang, slug)} class="project-card-link">
+                {data.title}
+              </a>
+            </h3>
+            <p class:list={['mt-3 text-muted', lead ? 'text-lg' : 'line-clamp-3']}>
+              {data.summary}
+            </p>
+            {lead && <p class="label-mono mt-4">{data.role}</p>}
+            {lead && data.flow && (
+              <ol class="project-flow mt-7 font-mono text-[0.8125rem]">
+                {data.flow.map((step) => (
+                  <li>{step}</li>
+                ))}
+              </ol>
+            )}
+            <div class="mt-auto flex flex-wrap items-end justify-between gap-4 pt-6">
+              <ul class="flex flex-wrap gap-1.5">
+                {chips.map((chip) => (
+                  <li class="chip">{chip}</li>
+                ))}
+                {extra > 0 && <li class="chip">+{extra}</li>}
+              </ul>
+              <span class="project-card-cta flex items-center gap-1.5 text-sm font-semibold" aria-hidden="true">
+                {t('home.featured.read')}
+                <ArrowRightIcon width="16" height="16" />
+              </span>
+            </div>
+          </article>
+        </li>
+      );
+    })
+  }
+</ul>
+
+<style>
+  .project-card {
+    transition: border-color 150ms ease;
+  }
+
+  .project-card-link::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+  }
+
+  .project-card-link:focus-visible {
+    outline: none;
+  }
+
+  .project-card:has(.project-card-link:focus-visible) {
+    outline: 2px solid var(--accent);
+    outline-offset: 3px;
+  }
+
+  .project-card:hover,
+  .project-card:has(.project-card-link:focus-visible) {
+    border-color: var(--accent);
+  }
+
+  /* Flujo de arquitectura: pasos unidos por una línea, como en el diagrama del pipeline. */
+  .project-flow {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem 0;
+  }
+
+  .project-flow li {
+    display: flex;
+    align-items: center;
+    color: var(--fg);
+  }
+
+  .project-flow li:not(:last-child)::after {
+    content: '';
+    width: 1.25rem;
+    height: 1px;
+    margin-inline: 0.5rem;
+    background: var(--line-strong);
+  }
+
+  @media (min-width: 64rem) {
+    .project-flow {
+      flex-direction: column;
+      gap: 0;
+    }
+
+    .project-flow li {
+      position: relative;
+      padding-left: 1.25rem;
+      line-height: 2.25rem;
+    }
+
+    .project-flow li::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 50%;
+      width: 0.5rem;
+      height: 0.5rem;
+      border: 1px solid var(--line-strong);
+      border-radius: 2px;
+      background: var(--surface);
+      transform: translateY(-50%);
+    }
+
+    .project-flow li:last-child::before {
+      border-color: var(--accent);
+    }
+
+    .project-flow li:not(:last-child)::after {
+      position: absolute;
+      left: calc(0.25rem - 0.5px);
+      top: calc(50% + 0.25rem);
+      width: 1px;
+      height: calc(100% - 0.5rem);
+      margin: 0;
+    }
+  }
+
+  .project-card-cta {
+    color: var(--muted);
+    transition:
+      color 150ms ease,
+      transform 200ms cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .project-card:hover .project-card-cta {
+    color: var(--accent);
+    transform: translateX(3px);
+  }
+
+  .project-card:hover .project-card-link {
+    color: var(--accent);
+  }
+</style>
