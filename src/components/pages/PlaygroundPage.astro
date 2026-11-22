@@ -1,0 +1,57 @@
+---
+import type { Lang } from '../../i18n/config';
+import { envioColumns } from '../../i18n/dataset';
+import { getRoutePath, useTranslations } from '../../i18n/utils';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { getLocalizedCollection } from '../../lib/collections';
+import PageHeader from '../PageHeader.astro';
+import PlaygroundSection from '../PlaygroundSection.astro';
+
+/** /playground: el SqlPlayground solo, con el diccionario de la vista envios. */
+interface Props {
+  lang: Lang;
+}
+
+const { lang } = Astro.props;
+const t = useTranslations(lang);
+
+// El enlace al caso solo aparece si el caso está publicado (no es borrador en producción).
+const caseItem = (await getLocalizedCollection('proyectos', lang)).find(
+  ({ slug }) => slug === 'trazabilidad-pedido',
+);
+---
+
+<BaseLayout lang={lang} title={t('playground.title')} description={t('playground.description')}>
+  <PageHeader title={t('playground.title')} lead={t('playground.description')} />
+
+  <div class="container-page pb-20">
+    <p class="max-w-2xl">{t('playground.intro')}</p>
+    {
+      caseItem && (
+        <p class="mt-4">
+          <a href={getRoutePath('projects', lang, caseItem.slug)} class="link">
+            {t('playground.case')}
+          </a>
+        </p>
+      )
+    }
+
+    <PlaygroundSection lang={lang} />
+
+    <details class="max-w-3xl rounded-ui border border-line">
+      <summary class="cursor-pointer px-4 py-3 font-semibold">{t('playground.dictionary')}</summary>
+      <dl class="divide-y divide-line border-t border-line text-sm">
+        {
+          envioColumns.map(({ name, type, description }) => (
+            <div class="grid gap-1 px-4 py-3 sm:grid-cols-[13rem_1fr] sm:gap-4">
+              <dt class="font-mono">
+                {name} <span class="text-muted">{type}</span>
+              </dt>
+              <dd class="text-muted">{description[lang]}</dd>
+            </div>
+          ))
+        }
+      </dl>
+    </details>
+  </div>
+</BaseLayout>

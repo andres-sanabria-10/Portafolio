@@ -131,6 +131,27 @@ const es = {
   'contact.linkedin.body': 'El canal más rápido para hablar de una vacante.',
   'contact.github.body': 'El código de este sitio y de mis proyectos.',
 
+  'playground.title': 'SQL en el navegador',
+  'playground.description':
+    'Consulta con SQL un dataset sintético de 20.000 envíos usando DuckDB, que corre completo en tu navegador. Las consultas de ejemplo usan CTEs y window functions.',
+  'playground.intro':
+    'El dataset trae a propósito los dos problemas de calidad que encontré en el caso de trazabilidad: guías repetidas por tener varios estados y espacios al inicio de las llaves. Compara la consulta de OTD con la de "el error de contar filas" para ver cuánto cambia el indicador.',
+  'playground.case': 'Leer el caso de trazabilidad',
+  'playground.dictionary': 'Columnas de la vista envios',
+  'playground.badge': 'DuckDB-WASM · vista envios · datos 100 % sintéticos',
+  'playground.examples': 'Consultas de ejemplo',
+  'playground.editor': 'Editor SQL',
+  'playground.run': 'Ejecutar',
+  'playground.running': 'Ejecutando…',
+  'playground.shortcut': 'Ctrl + Enter para ejecutar',
+  'playground.loading': 'Descargando DuckDB (solo la primera vez)…',
+  'playground.ready': 'Listo',
+  'playground.rows': '{n} filas · {ms} ms',
+  'playground.truncated': 'Se muestran las primeras {n}.',
+  'playground.error': 'La consulta falló',
+  'playground.results': 'Resultados de la consulta',
+  'playground.empty': 'La consulta no devolvió filas.',
+
   'notFound.title': 'Página no encontrada',
   'notFound.code': 'Error 404',
   'notFound.body':
@@ -278,6 +299,27 @@ const en: Record<UiKey, string> = {
     'Message me on LinkedIn or browse my code on GitHub. I reply to messages about data engineering openings.',
   'contact.linkedin.body': 'The fastest way to talk about an opening.',
   'contact.github.body': 'The code for this site and for my projects.',
+
+  'playground.title': 'SQL in the browser',
+  'playground.description':
+    'Query a synthetic dataset of 20,000 shipments with SQL using DuckDB, running entirely in your browser. The sample queries use CTEs and window functions.',
+  'playground.intro':
+    'The dataset deliberately includes the two data quality issues I found in the traceability case: tracking numbers repeated because they have several statuses, and leading spaces in the keys. Compare the OTD query with "the error of counting rows" to see how much the metric moves.',
+  'playground.case': 'Read the traceability case study',
+  'playground.dictionary': 'Columns of the envios view',
+  'playground.badge': 'DuckDB-WASM · envios view · 100% synthetic data',
+  'playground.examples': 'Sample queries',
+  'playground.editor': 'SQL editor',
+  'playground.run': 'Run',
+  'playground.running': 'Running…',
+  'playground.shortcut': 'Ctrl + Enter to run',
+  'playground.loading': 'Downloading DuckDB (first time only)…',
+  'playground.ready': 'Ready',
+  'playground.rows': '{n} rows · {ms} ms',
+  'playground.truncated': 'Showing the first {n}.',
+  'playground.error': 'The query failed',
+  'playground.results': 'Query results',
+  'playground.empty': 'The query returned no rows.',
 
   'notFound.title': 'Page not found',
   'notFound.code': 'Error 404',

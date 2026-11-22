@@ -1,0 +1,45 @@
+---
+import type { Lang } from '../i18n/config';
+import { useTranslations } from '../i18n/utils';
+import { toPlaygroundQueries } from '../lib/sql-queries';
+import type { PlaygroundLabels } from './vue/playground-labels';
+import SqlPlayground from './vue/SqlPlayground.vue';
+
+/**
+ * SqlPlayground listo para usar en una página o en un MDX:
+ * `<PlaygroundSection lang="es" />`. Las consultas de ejemplo se leen en el
+ * build desde `scripts/queries/*.sql`, la misma fuente que prueban los tests
+ * de Python, así que el playground y los scripts no se desincronizan.
+ */
+interface Props {
+  lang: Lang;
+}
+
+const { lang } = Astro.props;
+const t = useTranslations(lang);
+
+const files = import.meta.glob<string>('/scripts/queries/*.sql', {
+  query: '?raw',
+  import: 'default',
+  eager: true,
+});
+const queries = toPlaygroundQueries(files);
+
+const labels: PlaygroundLabels = {
+  badge: t('playground.badge'),
+  examples: t('playground.examples'),
+  editor: t('playground.editor'),
+  run: t('playground.run'),
+  running: t('playground.running'),
+  shortcut: t('playground.shortcut'),
+  loading: t('playground.loading'),
+  ready: t('playground.ready'),
+  rows: t('playground.rows'),
+  truncated: t('playground.truncated'),
+  error: t('playground.error'),
+  results: t('playground.results'),
+  empty: t('playground.empty'),
+};
+---
+
+<SqlPlayground client:visible queries={queries} parquetUrl="/data/envios_sinteticos.parquet" labels={labels} />
