@@ -131,7 +131,7 @@ const es = {
   'contact.linkedin.body': 'El canal más rápido para hablar de una vacante.',
   'contact.github.body': 'El código de este sitio y de mis proyectos.',
 
-  'trace.label': 'Arquitectura del pipeline de trazabilidad, en 10 etapas',
+  'trace.label': 'Arquitectura del pipeline de trazabilidad, en {total} etapas',
   'trace.hint':
     'Elige una etapa para ver qué datos entran, qué transformación se aplica, qué problema resolví ahí y con qué tecnología.',
   'trace.stageOf': 'Etapa {n} de {total}',
@@ -313,7 +313,7 @@ const en: Record<UiKey, string> = {
   'contact.linkedin.body': 'The fastest way to talk about an opening.',
   'contact.github.body': 'The code for this site and for my projects.',
 
-  'trace.label': 'Architecture of the traceability pipeline, in 10 stages',
+  'trace.label': 'Architecture of the traceability pipeline, in {total} stages',
   'trace.hint':
     'Pick a stage to see what data comes in, which transformation is applied, what problem I solved there and with which technology.',
   'trace.stageOf': 'Stage {n} of {total}',

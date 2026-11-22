@@ -18,7 +18,7 @@ const t = useTranslations(lang);
 const { lanes, stages } = getTraceabilityContent(lang);
 
 const labels: TraceLabels = {
-  label: t('trace.label'),
+  label: t('trace.label', { total: stages.length }),
   hint: t('trace.hint'),
   stageOf: t('trace.stageOf'),
   inputs: t('trace.inputs'),

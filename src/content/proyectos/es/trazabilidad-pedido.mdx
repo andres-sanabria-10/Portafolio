@@ -47,11 +47,11 @@ export const meta = resumen.metadatos;
 
 ## Contexto y problema
 
-Trabajo como Analista BI en un operador logístico farmacéutico en Colombia. Un pedido pasa por cuatro manos antes de llegar al cliente: el contact center lo recibe, el ERP lo factura y le asigna una guía, el equipo de despacho lo entrega a una transportadora y la transportadora lo lleva hasta el destino.
+Trabajo como Analista BI en un operador logístico farmacéutico en Colombia. Un envío pasa por tres manos antes de llegar al cliente: el ERP lo factura y le asigna una guía, el equipo de despacho lo entrega a una transportadora y la transportadora lo lleva hasta el destino.
 
-Cada una de esas etapas deja su registro en un sistema distinto. Cuando un cliente preguntaba por qué su pedido había tardado, la respuesta dependía de a quién se le preguntara: despacho veía su parte, la transportadora la suya, y nadie tenía la línea completa.
+Cada una de esas etapas deja su registro en un sistema distinto. Cuando un cliente preguntaba por qué su envío había tardado, la respuesta dependía de a quién se le preguntara: despacho veía su parte, la transportadora la suya, y nadie tenía la línea completa.
 
-La pregunta de negocio era sencilla: **¿dónde se demora el pedido y qué transportadora cumple lo que promete?** Responderla exigía unir datos que nunca habían estado juntos.
+Las preguntas de negocio eran tres: **¿dónde se demora el envío?**, **¿qué transportadora cumple lo que promete en cada ruta?** y **¿cuánto nos cuesta cada envío frente a lo que vendemos?** Responderlas exigía unir datos que nunca habían estado juntos.
 
 ## Arquitectura
 
@@ -171,7 +171,7 @@ Además de esa validación, el pipeline revisa en cada carga:
 
 - **Estados sin mapear:** cualquier estado de origen que no esté en el mapeo se reporta.
 - **Unicidad del grano:** `fact_envios` debe tener una sola fila por guía.
-- **Orden de las fechas:** solicitud ≤ factura ≤ despacho ≤ entrega.
+- **Orden de las fechas:** factura ≤ despacho ≤ entrega.
 - **Guías huérfanas:** guías que reporta una transportadora pero no existen en el ERP, y al revés.
 
 {/* TODO(Andrés): confirmar cuáles de estas validaciones están automatizadas y cuáles se revisan a mano. */}
@@ -179,10 +179,10 @@ Además de esa validación, el pipeline revisa en cada carga:
 ## Resultados
 
 {/* TODO: métrica real aproximada — cuántos pedidos o guías al mes cubre el pipeline. */}
-{/* TODO: métrica real aproximada — tiempo que tomaba antes armar el seguimiento de un pedido y cuánto toma ahora. */}
+{/* TODO: métrica real aproximada — tiempo que tomaba antes armar el seguimiento de un envío y cuánto toma ahora. */}
 {/* TODO: métrica real aproximada — decisiones o cambios que salieron del ranking de OTD (sin nombrar transportadoras). */}
 
-- Por primera vez existe una línea de tiempo completa de cada pedido, de la solicitud a la entrega, en una sola tabla.
+- Por primera vez existe una línea de tiempo completa de cada envío, de la factura a la entrega, en una sola tabla.
 - El ranking de OTD por transportadora se calcula con la misma regla para las siete.
 - El indicador del tablero coincide con SQL, y esa validación quedó como parte del proceso.
 - Las reexpediciones se ven por separado, así que su demora ya no se confunde con la de los envíos directos.

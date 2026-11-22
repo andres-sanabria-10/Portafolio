@@ -55,26 +55,14 @@ const es: TraceabilityContent = {
   ],
   stages: [
     {
-      id: 'solicitud',
-      lane: 'origen',
-      title: 'Solicitud en el contact center',
-      subtitle: 'Arranca el reloj del pedido',
-      inputs:
-        'El pedido que registra el contact center: número de solicitud, cliente, destino y la fecha y hora en que se pidió.',
-      transform:
-        'Se toma la fecha de solicitud como inicio del reloj del pedido y se conserva la llave de la solicitud para unirla después con la factura.',
-      problem:
-        'La solicitud vivía en un sistema distinto al de facturación y despacho, así que nadie podía decir cuánto tardaba un pedido desde que el cliente lo pedía hasta que lo recibía.',
-      tech: ['Base de datos del contact center', 'SQL'],
-    },
-    {
       id: 'facturacion',
       lane: 'origen',
       title: 'Facturación en el ERP',
-      subtitle: 'Factura + guía',
-      inputs: 'La factura del pedido y el número de guía que se asigna al envío.',
+      subtitle: 'Arranca el reloj del envío',
+      inputs:
+        'La factura del envío, con su valor de venta, y el número de guía que se le asigna.',
       transform:
-        'Se relacionan solicitud, factura y guía. La guía es la llave que conecta el pedido interno con lo que reporta la transportadora.',
+        'La fecha de la factura marca el inicio del reloj del envío. Factura y guía quedan relacionadas: la guía es la llave que conecta lo interno con lo que reporta la transportadora, y la factura aporta el valor de venta para comparar el flete.',
       problem:
         'Algunas llaves de guía venían con espacios al inicio y rompían los cruces con los datos de las transportadoras. Ahora se limpian con TRIM antes de cualquier unión.',
       tech: ['ERP', 'T-SQL'],
@@ -84,7 +72,8 @@ const es: TraceabilityContent = {
       lane: 'origen',
       title: 'Despacho',
       subtitle: 'Entrega a la transportadora',
-      inputs: 'La fecha y hora de despacho y la transportadora asignada a cada guía.',
+      inputs:
+        'La fecha y hora de despacho, la transportadora asignada, el peso y el valor del flete de cada guía.',
       transform:
         'Se calcula el tiempo interno (de la factura al despacho) y queda registrada la fecha de entrega comprometida.',
       problem:
@@ -147,7 +136,7 @@ const es: TraceabilityContent = {
       title: 'fact_envios en SQL Server',
       subtitle: 'Una fila por guía',
       inputs:
-        'Cada guía con las fechas de todas sus etapas, la transportadora, el estado final y la marca de reexpedición.',
+        'Cada guía con las fechas de todas sus etapas, la transportadora, la ruta, el estado final, la marca de reexpedición, el valor de venta, el flete y el peso.',
       transform:
         'Se carga la tabla de hechos fact_envios, relacionada con dimensiones como dim_transportadora y dim_ciudad.',
       problem:
@@ -157,13 +146,13 @@ const es: TraceabilityContent = {
     {
       id: 'medicion',
       lane: 'consumo',
-      title: 'Tiempos por etapa y ranking de OTD',
-      subtitle: 'CTEs y window functions',
+      title: 'Tiempos por ruta, OTD y flete vs venta',
+      subtitle: 'Comparar en igualdad de condiciones',
       inputs: 'fact_envios.',
       transform:
-        'Consultas con CTEs y window functions calculan el tiempo de cada etapa, la entrega a tiempo (OTD) por transportadora y su posición con RANK().',
+        'Consultas con CTEs y window functions calculan el tiempo de cada etapa por ruta (origen–destino) y transportadora, la entrega a tiempo (OTD) con su ranking y el porcentaje que representa el flete frente al valor de venta de cada guía.',
       problem:
-        'Ubicar dónde se demora el pedido: en el proceso interno o en la transportadora.',
+        'Comparar transportadoras solo entre las que atienden la misma ruta, ubicar dónde se demora el envío y ver, guía por guía, si el flete supera la meta del 1 % de la venta.',
       tech: ['T-SQL', 'CTEs', 'Window functions'],
     },
     {
@@ -173,7 +162,7 @@ const es: TraceabilityContent = {
       subtitle: 'Validado contra SQL',
       inputs: 'El modelo de SQL Server.',
       transform:
-        'Medidas DAX de OTD, tiempos por etapa y ranking, con filtros por transportadora, ciudad y mes.',
+        'Medidas DAX de OTD, tiempos por ruta y ranking, y un semáforo de flete vs venta, con filtros por transportadora, ciudad y mes.',
       problem:
         'Al validar el tablero contra SQL apareció una diferencia: una relación del modelo contaba guías repetidas, una vez por cada estado. Lo corregí con un filtro explícito en la medida y SQL quedó como la referencia para validar.',
       tech: ['Power BI', 'DAX'],
