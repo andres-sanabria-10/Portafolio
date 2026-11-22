@@ -1,34 +1,201 @@
 ---
 title: Trazabilidad de punta a punta del pedido
 summary: ETL en Python que integra las APIs REST y SOAP de 7 transportadoras, normaliza sus estados a un modelo común y une todas las etapas del pedido en SQL Server para medir el tiempo de cada una y la entrega a tiempo (OTD).
-# TODO: fecha real del proyecto (también define el orden en los listados).
+# TODO(Andrés): fecha real del proyecto (también define el orden en los listados).
 date: 2026-06-01
 stack: [Python, pandas, APIs REST, SOAP, SQL Server, Power BI]
 flow: [APIs REST y SOAP, Ingesta en Python, staging, Modelo de estados, fact_envios, Power BI]
 role: Diseño y desarrollo del ETL y del modelo de estados
-# TODO: confirmar el estado.
+# TODO(Andrés): confirmar el estado.
 status: en producción
 featured: true
-# Borrador hasta la fase 3: se ve en `npm run dev`, no en producción.
+# Borrador hasta completar los TODO de "Resultados": se ve en `npm run dev`, no en producción.
 draft: true
+linkedin_post: |
+  Un indicador de Power BI me decía que una transportadora entregaba a tiempo unos 6 puntos menos de lo real.
+
+  El tablero no estaba "mal hecho". El problema era más silencioso: una relación del modelo contaba cada guía una vez por cada estado que tenía. Una guía con tres estados pesaba tres veces, y justo las guías con novedades son las que más estados acumulan.
+
+  Lo encontré por una costumbre que hoy no negocio: validar cada indicador del BI contra una consulta en SQL.
+
+  Tres ideas que me dejó este proyecto de trazabilidad (7 transportadoras, unas por REST y otras por SOAP):
+
+  1. Define el grano antes de medir. "Una fila por guía" parece obvio hasta que no lo es.
+  2. Limpia las llaves en la entrada. Un espacio al inicio de un número de guía basta para romper un cruce.
+  3. SQL es la fuente de verdad; el tablero es la presentación.
+
+  Escribí el caso completo, con un playground donde puedes reproducir el error con datos sintéticos.
+
+  ¿Tú validas tus tableros contra la base de datos o confías en el modelo?
 ---
 
-{/* Borrador de la fase 2: solo el frontmatter para las tarjetas del inicio. El caso completo se escribe en la fase 3. */}
+import TraceabilityDiagram from '../../../components/TraceabilityDiagram.astro';
+import PlaygroundSection from '../../../components/PlaygroundSection.astro';
+import resumen from '../../../../public/data/envios_resumen.json';
 
-El caso de estudio completo está en redacción.
+export const n = (value) => value.toLocaleString('es-CO');
+export const peor = resumen.otd_por_transportadora.reduce((a, b) => (b.diferencia_pp < a.diferencia_pp ? b : a));
+export const calidad = resumen.calidad_sembrada;
+export const meta = resumen.metadatos;
+
+{/*
+  Borrador de la fase 3. Revisar con Andrés antes de publicar:
+  - Las decisiones técnicas y las alternativas descartadas (están redactadas a partir de la especificación).
+  - Las métricas de "Resultados" (TODO).
+  - Cuántas transportadoras son REST y cuántas SOAP (src/i18n/trazabilidad.ts).
+*/}
 
 ## Contexto y problema
 
+Trabajo como Analista BI en un operador logístico farmacéutico en Colombia. Un pedido pasa por cuatro manos antes de llegar al cliente: el contact center lo recibe, el ERP lo factura y le asigna una guía, el equipo de despacho lo entrega a una transportadora y la transportadora lo lleva hasta el destino.
+
+Cada una de esas etapas deja su registro en un sistema distinto. Cuando un cliente preguntaba por qué su pedido había tardado, la respuesta dependía de a quién se le preguntara: despacho veía su parte, la transportadora la suya, y nadie tenía la línea completa.
+
+La pregunta de negocio era sencilla: **¿dónde se demora el pedido y qué transportadora cumple lo que promete?** Responderla exigía unir datos que nunca habían estado juntos.
+
 ## Arquitectura
+
+El pipeline toma los datos de los sistemas internos y de las APIs de 7 transportadoras, los normaliza a un modelo común y los deja en una tabla de hechos con una fila por guía. Sobre esa tabla se calculan los tiempos y el OTD, y Power BI los presenta.
+
+Haz clic en cada etapa (o recórrelas con el teclado) para ver qué datos entran, qué transformación se aplica y qué problema resolví en ella.
+
+<TraceabilityDiagram lang="es" />
 
 ## Decisiones técnicas
 
+{/* TODO(Andrés): confirmar que estas decisiones y alternativas reflejan lo que pasó. */}
+
+**Un adaptador por transportadora, con una salida común.** Cada transportadora tiene su API: unas responden REST con JSON y otras SOAP con XML, con autenticación y nombres de estado propios. En lugar de un script por transportadora, cada integración es un adaptador pequeño que devuelve siempre las mismas columnas (guía, estado de origen, fecha del evento). Agregar una transportadora nueva es escribir un adaptador, no tocar el resto del pipeline. *Descarté* un script monolítico con un `if` por transportadora: funcionaba con dos, pero con siete se volvía imposible de probar.
+
+**Guardar el dato crudo antes de transformarlo.** La ingesta deja la respuesta de cada API en staging tal como llegó, y la normalización corre después. Si cambia una regla (por ejemplo, qué cuenta como "entregado"), se reprocesa desde staging sin volver a consultar las APIs. *Descarté* transformar en memoria y guardar solo el resultado: era más simple, pero perdía la trazabilidad de qué dijo cada transportadora.
+
+**Un modelo común de estados con un mapeo explícito.** Cada estado de origen se traduce con una tabla de mapeo por transportadora a cinco estados comunes. Un estado que no está en el mapeo se reporta para revisarlo, no se descarta. *Descarté* reglas por texto (por ejemplo, "si contiene *entreg*, es entregado"): son cómodas al inicio y fallan en silencio cuando una transportadora cambia su redacción.
+
+**Grano de una fila por guía en `fact_envios`.** La tabla de hechos tiene exactamente una fila por guía, con las fechas de cada etapa. El historial de eventos queda aparte. Ese grano es el que evita contar dos veces una guía, como se ve en la sección de calidad de datos.
+
+**SQL Server como fuente de verdad; Power BI como presentación.** Los indicadores se calculan y se validan en SQL. Power BI los muestra y permite filtrarlos, pero si un número del tablero no coincide con la consulta, el que está mal es el tablero.
+
 ## Partes interesantes del código
+
+Los fragmentos están simplificados y usan nombres genéricos y datos sintéticos.
+
+**Normalizar estados a un modelo común.** Cada transportadora nombra sus estados a su manera; el mapeo los traduce y deja visibles los que no reconoce.
+
+```python
+import pandas as pd
+
+# Estado de origen -> estado común. Una tabla por transportadora (extracto).
+MAPA_ESTADOS: dict[str, dict[str, str]] = {
+    "Transportadora A": {"RECOGIDO": "despachado", "EN RUTA": "en_transito",
+                         "NOVEDAD": "novedad", "ENTREGADO": "entregado"},
+    "Transportadora D": {"01": "despachado", "02": "en_transito",
+                         "08": "novedad", "05": "entregado", "09": "devuelto"},
+}
+
+
+def normalizar_estados(crudo: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """Devuelve (normalizados, sin_mapear). Nada se descarta en silencio."""
+    df = crudo.assign(
+        guia=crudo["guia"].str.strip(),  # las llaves llegan con espacios
+        estado_origen=crudo["estado_origen"].astype(str).str.strip().str.upper(),
+    )
+    df["estado"] = [
+        MAPA_ESTADOS.get(transp, {}).get(estado)
+        for transp, estado in zip(df["transportadora"], df["estado_origen"])
+    ]
+    sin_mapear = df[df["estado"].isna()]
+    return df.dropna(subset=["estado"]), sin_mapear
+```
+
+**OTD con una fila por guía.** La versión en T-SQL que corre sobre SQL Server: limpia la llave, se queda con el estado más avanzado de cada guía y solo entonces cuenta.
+
+```sql
+WITH limpio AS (
+    SELECT LTRIM(RTRIM(guia)) AS guia, transportadora, estado,
+           fecha_entrega, fecha_entrega_estimada,
+           ROW_NUMBER() OVER (
+               PARTITION BY LTRIM(RTRIM(guia))
+               ORDER BY orden_estado DESC
+           ) AS rn
+    FROM staging_estados_guia
+)
+SELECT transportadora,
+       COUNT(*) AS entregas,
+       CAST(100.0 * SUM(CASE WHEN fecha_entrega <= fecha_entrega_estimada THEN 1 ELSE 0 END)
+            / COUNT(*) AS DECIMAL(5, 2)) AS otd_pct,
+       RANK() OVER (ORDER BY 1.0 * SUM(CASE WHEN fecha_entrega <= fecha_entrega_estimada
+                                            THEN 1 ELSE 0 END) / COUNT(*) DESC) AS puesto
+FROM limpio
+WHERE rn = 1 AND estado = 'entregado'
+GROUP BY transportadora;
+```
+
+**La medida DAX, antes y después.** Ilustrativa: la primera contaba filas de la tabla de estados a través de la relación; la segunda cuenta guías, una sola vez, con su estado final.
+
+```dax
+-- Antes: una guía con tres estados pesaba tres veces.
+OTD % (antes) =
+DIVIDE (
+    CALCULATE ( COUNTROWS ( estados_guia ), estados_guia[a_tiempo] = TRUE () ),
+    COUNTROWS ( estados_guia )
+)
+
+-- Después: filtro explícito al estado final; cada guía cuenta una vez.
+OTD % =
+VAR entregadas =
+    CALCULATETABLE ( VALUES ( fact_envios[guia] ), fact_envios[estado] = "entregado" )
+RETURN
+    DIVIDE (
+        CALCULATE ( DISTINCTCOUNT ( fact_envios[guia] ), entregadas, fact_envios[a_tiempo] = TRUE () ),
+        COUNTROWS ( entregadas )
+    )
+```
 
 ## Calidad de datos y validación
 
+Esta es la parte del proyecto de la que más aprendí.
+
+Con el tablero terminado, hice lo que hago con cualquier indicador antes de entregarlo: lo comparé con una consulta directa en SQL. Para casi todas las transportadoras los números coincidían. Para una, el OTD de Power BI salía **unos 6 puntos más bajo** que el de SQL.
+
+La causa estaba en el modelo. Una relación unía cada guía con la tabla de sus estados, y la medida contaba filas de esa tabla. Una guía con tres estados (despachada, en tránsito, entregada) contaba tres veces. Peor aún: las guías que pasan por una **novedad** acumulan más estados, y esas son justamente las que suelen llegar tarde. El error no era aleatorio: castigaba siempre a las transportadoras con más novedades.
+
+Lo corregí con un filtro explícito en la medida, para que cada guía cuente una vez con su estado final, y dejé la consulta de SQL como referencia para validar el tablero.
+
+En el camino apareció un segundo problema, más pequeño pero igual de traicionero: **algunas llaves de guía traían espacios al inicio**. Para la base de datos, `" GS123"` y `"GS123"` son guías distintas, así que esos registros no cruzaban con lo que reportaba la transportadora. Ahora todas las llaves se limpian con `TRIM` en la entrada, antes de cualquier unión.
+
+> **Lección:** valida siempre el BI contra SQL. Un tablero puede verse impecable y estar contando mal.
+
+**El mismo error, reproducido con datos sintéticos.** Para poder mostrarlo sin exponer datos reales, el dataset sintético de este sitio trae los dos problemas sembrados a propósito: {n(calidad.guias_duplicadas)} guías repetidas por tener varios estados y {n(calidad.filas_con_espacios)} filas con espacios al inicio de la llave (por eso `COUNT(DISTINCT guia)` da {n(calidad.guias_distintas_sin_limpiar)} en lugar de {n(meta.guias_unicas)}). Con esos datos, la {peor.transportadora} pasa de un OTD de {n(peor.otd_pct)} % a {n(peor.otd_ingenuo_pct)} % si se cuentan filas en lugar de guías: {n(Math.abs(peor.diferencia_pp))} puntos menos. *Cifras 100 % sintéticas: no son datos de ninguna empresa.* Puedes comprobarlo tú con la consulta "El error de contar filas en vez de guías" del playground al final de esta página.
+
+Además de esa validación, el pipeline revisa en cada carga:
+
+- **Estados sin mapear:** cualquier estado de origen que no esté en el mapeo se reporta.
+- **Unicidad del grano:** `fact_envios` debe tener una sola fila por guía.
+- **Orden de las fechas:** solicitud ≤ factura ≤ despacho ≤ entrega.
+- **Guías huérfanas:** guías que reporta una transportadora pero no existen en el ERP, y al revés.
+
+{/* TODO(Andrés): confirmar cuáles de estas validaciones están automatizadas y cuáles se revisan a mano. */}
+
 ## Resultados
 
-{/* TODO: métrica real aproximada */}
+{/* TODO: métrica real aproximada — cuántos pedidos o guías al mes cubre el pipeline. */}
+{/* TODO: métrica real aproximada — tiempo que tomaba antes armar el seguimiento de un pedido y cuánto toma ahora. */}
+{/* TODO: métrica real aproximada — decisiones o cambios que salieron del ranking de OTD (sin nombrar transportadoras). */}
+
+- Por primera vez existe una línea de tiempo completa de cada pedido, de la solicitud a la entrega, en una sola tabla.
+- El ranking de OTD por transportadora se calcula con la misma regla para las siete.
+- El indicador del tablero coincide con SQL, y esa validación quedó como parte del proceso.
+- Las reexpediciones se ven por separado, así que su demora ya no se confunde con la de los envíos directos.
 
 ## Qué haría distinto
+
+- **Orquestar con una herramienta y no solo con tareas programadas.** Con siete fuentes y dependencias entre etapas, algo como Airflow daría reintentos, alertas y un historial de ejecuciones sin código propio.
+- **Pruebas de calidad declarativas.** Las validaciones de la sección anterior estarían mejor como pruebas versionadas (por ejemplo, con dbt o Great Expectations) que fallen la carga cuando algo no cuadra.
+- **Cargas incrementales.** Consultar solo las guías que cambiaron desde la última ejecución reduciría las llamadas a las APIs.
+- **Probar en la nube.** Es el siguiente paso natural de lo que estoy aprendiendo: dejar el crudo en S3 en Parquet y consultarlo con Athena.
+
+## Pruébalo: SQL sobre el dataset sintético
+
+El playground corre DuckDB completo en tu navegador sobre {n(meta.filas)} filas sintéticas de envíos ({n(meta.guias_unicas)} guías). Elige una consulta de ejemplo o escribe la tuya sobre la vista `envios`.
+
+<PlaygroundSection lang="es" />
