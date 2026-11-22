@@ -1,0 +1,49 @@
+---
+import { site } from '../../config/site';
+import type { Lang } from '../../i18n/config';
+import { collectionRoutes, type ContentCollection } from '../../i18n/routes';
+import { getRoutePath, useTranslations } from '../../i18n/utils';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { getLocalizedCollection } from '../../lib/collections';
+import EmptyState from '../EmptyState.astro';
+import EntryList from '../EntryList.astro';
+import PageHeader from '../PageHeader.astro';
+
+/**
+ * Página de listado compartida por Proyectos, Aprende y Blog en ambos idiomas.
+ * En la fase 2+ el listado de proyectos se reemplaza por `ProjectFilter.vue`.
+ */
+interface Props {
+  collection: ContentCollection;
+  lang: Lang;
+}
+
+const { collection, lang } = Astro.props;
+const t = useTranslations(lang);
+const route = collectionRoutes[collection];
+const items = await getLocalizedCollection(collection, lang);
+---
+
+<BaseLayout lang={lang} title={t(`${route}.title`)} description={t(`${route}.description`)}>
+  <PageHeader
+    title={t(`${route}.title`)}
+    lead={t(`${route}.description`)}
+    label={getRoutePath(route, lang)}
+  />
+
+  <section class="container-page">
+    {
+      items.length > 0 ? (
+        <EntryList collection={collection} lang={lang} items={items} />
+      ) : (
+        <EmptyState title={t(`${route}.empty.title`)} body={t(`${route}.empty.body`)}>
+          {collection === 'proyectos' && (
+            <a href={site.github} class="btn btn-secondary" rel="noopener">
+              GitHub
+            </a>
+          )}
+        </EmptyState>
+      )
+    }
+  </section>
+</BaseLayout>

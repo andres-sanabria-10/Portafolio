@@ -1,0 +1,46 @@
+# Dependencias
+node_modules/
+
+# Astro / build
+dist/
+.astro/
+
+# Pagefind (se genera dentro de dist/, por si se ejecuta en otra carpeta)
+pagefind/
+
+# Lighthouse CI
+.lighthouseci/
+
+# Variables de entorno
+.env
+.env.*
+!.env.example
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Pruebas
+coverage/
+
+# Python (scripts de datos)
+.venv/
+venv/
+__pycache__/
+*.pyc
+.ruff_cache/
+.pytest_cache/
+
+# Material de trabajo que no forma parte del sitio
+prompt-claude-code-portafolio.md
+foto sin fondo.jpg
+.claude/
+
+# Editor y sistema
+.vscode/*
+!.vscode/extensions.json
+.idea/
+.DS_Store
+Thumbs.db

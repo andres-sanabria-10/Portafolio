@@ -1,0 +1,96 @@
+---
+import { Image } from 'astro:assets';
+import portrait from '../../assets/profile.png';
+import { site } from '../../config/site';
+import type { Lang } from '../../i18n/config';
+import type { UiKey } from '../../i18n/ui';
+import { getRoutePath, useTranslations } from '../../i18n/utils';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+
+/**
+ * Sobre mí (esqueleto de la fase 1). Solo usa hechos de la especificación;
+ * la historia completa y la línea de tiempo con fechas llegan en la fase 4.
+ */
+interface Props {
+  lang: Lang;
+}
+
+const { lang } = Astro.props;
+const t = useTranslations(lang);
+
+const steps = ['telecom', 'systems', 'bi', 'data'] as const;
+const stepKeys = (step: (typeof steps)[number]): { title: UiKey; body: UiKey } => ({
+  title: `about.path.${step}.title`,
+  body: `about.path.${step}.body`,
+});
+---
+
+<BaseLayout lang={lang} title={t('about.title')} description={t('about.description')}>
+  <header
+    class="container-page grid gap-8 pb-10 pt-14 md:pb-14 md:pt-20 lg:grid-cols-[1.6fr_1fr] lg:items-end lg:gap-20"
+  >
+    <div>
+      <p class="label-mono mb-4">{getRoutePath('about', lang)}</p>
+      <h1 class="max-w-3xl text-4xl font-semibold md:text-5xl">{t('about.title')}</h1>
+      <p class="mt-5 max-w-2xl text-lg text-muted">{t('about.description')}</p>
+    </div>
+    <Image
+      src={portrait}
+      alt={t('about.photo.alt')}
+      widths={[112, 176, 224, 352]}
+      sizes="(min-width: 1024px) 176px, 112px"
+      width={352}
+      height={352}
+      quality={92}
+      loading="eager"
+      fetchpriority="high"
+      class="order-first aspect-square w-28 justify-self-start rounded-ui border border-line bg-raised object-cover lg:order-none lg:w-44"
+    />
+  </header>
+
+  <div class="container-page grid gap-14 lg:grid-cols-[1.6fr_1fr] lg:gap-20">
+    <div>
+      <p class="max-w-2xl text-lg">{t('about.intro')}</p>
+
+      <section class="mt-12" aria-labelledby="path-title">
+        <h2 id="path-title" class="text-2xl font-semibold">{t('about.path.title')}</h2>
+        <ol class="mt-6 border-l border-line">
+          {
+            steps.map((step, index) => {
+              const keys = stepKeys(step);
+              const isCurrent = index === steps.length - 1;
+              return (
+                <li class="relative pb-8 pl-6 last:pb-0">
+                  <span
+                    class:list={[
+                      'absolute -left-[5px] top-2 size-[9px] rounded-full border',
+                      isCurrent ? 'border-accent bg-accent' : 'border-line-strong bg-bg',
+                    ]}
+                    aria-hidden="true"
+                  />
+                  <h3 class="font-semibold">{t(keys.title)}</h3>
+                  <p class="mt-1 max-w-xl text-muted">{t(keys.body)}</p>
+                </li>
+              );
+            })
+          }
+        </ol>
+      </section>
+
+      <p class="label-mono mt-10">{t('about.wip')}</p>
+    </div>
+
+    <aside class="space-y-10">
+      <section aria-labelledby="now-title">
+        <h2 id="now-title" class="label-mono">{t('about.now.title')}</h2>
+        <p class="mt-2">{t('about.now.body')}</p>
+      </section>
+      <section aria-labelledby="certs-title">
+        <h2 id="certs-title" class="label-mono">{t('about.certs.title')}</h2>
+        <ul class="mt-2 space-y-1">
+          {site.certifications.map((cert) => <li>{cert}</li>)}
+        </ul>
+      </section>
+    </aside>
+  </div>
+</BaseLayout>

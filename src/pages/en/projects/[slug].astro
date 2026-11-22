@@ -1,0 +1,16 @@
+---
+import type { GetStaticPaths, InferGetStaticPropsType } from 'astro';
+import EntryPage from '../../../components/pages/EntryPage.astro';
+import { getEntryStaticPaths } from '../../../lib/collections';
+
+// Una página por slug. Si falta la versión en este idioma, se genera igual
+// con el contenido del otro idioma y un aviso de traducción pendiente.
+export const getStaticPaths = (() =>
+  getEntryStaticPaths('proyectos', 'en')) satisfies GetStaticPaths;
+
+type Props = InferGetStaticPropsType<typeof getStaticPaths>;
+
+const { item } = Astro.props;
+---
+
+<EntryPage collection="proyectos" lang="en" item={item} />

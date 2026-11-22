@@ -1,0 +1,83 @@
+---
+import { defaultLang, localeMeta, locales } from '../i18n/config';
+import { getRoutePath, useTranslations } from '../i18n/utils';
+import BaseLayout from '../layouts/BaseLayout.astro';
+
+/**
+ * GitHub Pages sirve este único `404.html` para cualquier ruta inexistente,
+ * también bajo `/en/`. Por eso la página lleva el mensaje en todos los idiomas:
+ * por defecto se ve el español y un script inline muestra el que corresponde
+ * a la URL. Sin JavaScript se ven ambos.
+ */
+const t = useTranslations(defaultLang);
+---
+
+<BaseLayout
+  lang={defaultLang}
+  title={t('notFound.title')}
+  description={t('notFound.body')}
+  alternates={false}
+  noindex
+>
+  <div class="container-page py-20 md:py-28" data-not-found>
+    {
+      locales.map((lang) => {
+        const tl = useTranslations(lang);
+        return (
+          <section
+            lang={localeMeta[lang].htmlLang}
+            data-lang-block={lang}
+            class="not-found-block max-w-2xl"
+          >
+            <p class="font-mono text-sm text-accent">{tl('notFound.code')}</p>
+            <h1 class="mt-4 text-4xl font-semibold md:text-5xl">{tl('notFound.title')}</h1>
+            <pre class="mt-8 overflow-x-auto rounded-ui border border-line bg-surface px-4 py-3 font-mono text-sm text-muted"><code>SELECT * FROM pages WHERE path = '<span data-missing-path>/…</span>';
+-- 0 rows</code></pre>
+            <p class="mt-6 text-lg text-muted">{tl('notFound.body')}</p>
+            <p class="mt-8 flex flex-wrap gap-3">
+              <a href={getRoutePath('home', lang)} class="btn btn-primary">
+                {tl('notFound.home')}
+              </a>
+              <a href={getRoutePath('projects', lang)} class="btn btn-secondary">
+                {tl('nav.projects')}
+              </a>
+            </p>
+          </section>
+        );
+      })
+    }
+  </div>
+</BaseLayout>
+
+<style>
+  .not-found-block + .not-found-block {
+    margin-top: 4rem;
+    padding-top: 4rem;
+    border-top: 1px solid var(--line);
+  }
+
+  /* El script marca el idioma activo en el contenedor y se oculta el resto. */
+  [data-active-lang] .not-found-block {
+    margin-top: 0;
+    padding-top: 0;
+    border-top: 0;
+  }
+
+  [data-active-lang='es'] .not-found-block:not([data-lang-block='es']),
+  [data-active-lang='en'] .not-found-block:not([data-lang-block='en']) {
+    display: none;
+  }
+</style>
+
+<script is:inline define:vars={{ locales, defaultLang }}>
+  (function () {
+    var first = location.pathname.split('/').filter(Boolean)[0];
+    var lang = locales.indexOf(first) !== -1 ? first : defaultLang;
+    var container = document.querySelector('[data-not-found]');
+    if (container) container.setAttribute('data-active-lang', lang);
+    document.documentElement.lang = lang;
+    document.querySelectorAll('[data-missing-path]').forEach(function (node) {
+      node.textContent = location.pathname;
+    });
+  })();
+</script>

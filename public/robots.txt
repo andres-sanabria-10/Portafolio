@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://andres-sanabria-10.github.io/sitemap-index.xml

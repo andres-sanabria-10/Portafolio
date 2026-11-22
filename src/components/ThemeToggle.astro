@@ -1,0 +1,79 @@
+---
+import MoonIcon from '@phosphor-icons/core/assets/regular/moon.svg';
+import SunIcon from '@phosphor-icons/core/assets/regular/sun.svg';
+import type { Lang } from '../i18n/config';
+import { useTranslations } from '../i18n/utils';
+
+interface Props {
+  lang: Lang;
+}
+
+const t = useTranslations(Astro.props.lang);
+---
+
+<!--
+  El tema inicial lo fija el script inline de BaseLayout antes del primer
+  pintado. Este botón solo lo alterna y lo guarda. La etiqueta accesible
+  describe la acción y se actualiza con cada cambio.
+-->
+<button
+  type="button"
+  class="icon-button"
+  aria-label={t('theme.toLight')}
+  data-theme-toggle
+  data-label-to-light={t('theme.toLight')}
+  data-label-to-dark={t('theme.toDark')}
+>
+  <SunIcon class="theme-icon-sun" width="20" height="20" aria-hidden="true" />
+  <MoonIcon class="theme-icon-moon" width="20" height="20" aria-hidden="true" />
+</button>
+
+<style is:global>
+  /* En oscuro se ofrece el sol (ir a claro); en claro, la luna. */
+  .theme-icon-moon,
+  [data-theme='light'] .theme-icon-sun {
+    display: none;
+  }
+
+  [data-theme='light'] .theme-icon-moon {
+    display: block;
+  }
+</style>
+
+<script>
+  type Theme = 'dark' | 'light';
+
+  const root = document.documentElement;
+  const buttons = document.querySelectorAll<HTMLButtonElement>('[data-theme-toggle]');
+  const currentTheme = (): Theme => (root.dataset.theme === 'light' ? 'light' : 'dark');
+
+  const syncLabels = () => {
+    const theme = currentTheme();
+    for (const button of buttons) {
+      const label =
+        theme === 'dark' ? button.dataset.labelToLight : button.dataset.labelToDark;
+      if (label) button.setAttribute('aria-label', label);
+    }
+  };
+
+  const applyTheme = (theme: Theme) => {
+    root.dataset.theme = theme;
+    document
+      .querySelector('meta[name="theme-color"]')
+      ?.setAttribute('content', theme === 'dark' ? '#0b1117' : '#f6f8fa');
+    try {
+      localStorage.setItem('theme', theme);
+    } catch {
+      // Almacenamiento bloqueado (modo privado): el tema dura lo que dure la página.
+    }
+    syncLabels();
+  };
+
+  for (const button of buttons) {
+    button.addEventListener('click', () => {
+      applyTheme(currentTheme() === 'dark' ? 'light' : 'dark');
+    });
+  }
+
+  syncLabels();
+</script>

@@ -1,0 +1,118 @@
+---
+import { render } from 'astro:content';
+import { localeMeta, type Lang } from '../../i18n/config';
+import { collectionRoutes, type ContentCollection } from '../../i18n/routes';
+import { levelLabels, statusLabels } from '../../i18n/ui';
+import { formatDate, getRoutePath, useTranslations } from '../../i18n/utils';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import type { LocalizedItem } from '../../lib/collections';
+import TranslationNotice from '../TranslationNotice.astro';
+
+/**
+ * Página de detalle compartida por los casos de estudio, las notas de Aprende
+ * y los artículos del blog. Si `item.isFallback` es true, el contenido está en
+ * otro idioma: se muestra el aviso y la URL canónica apunta a la versión original.
+ */
+interface Props {
+  collection: ContentCollection;
+  lang: Lang;
+  item: LocalizedItem;
+}
+
+const { collection, lang, item } = Astro.props;
+const { entry, slug, contentLang, isFallback } = item;
+const { data } = entry;
+const t = useTranslations(lang);
+const route = collectionRoutes[collection];
+const { Content } = await render(entry);
+
+const chips = 'stack' in data ? data.stack : data.tags;
+const facts: { term: string; value: string }[] = [];
+if ('role' in data) {
+  facts.push({ term: t('content.role'), value: data.role });
+  facts.push({ term: t('content.status'), value: statusLabels[lang][data.status] });
+}
+if ('level' in data) {
+  facts.push({ term: t('content.level'), value: levelLabels[lang][data.level] });
+}
+const links: { label: string; href: string }[] = [];
+if ('repo' in data && data.repo) links.push({ label: t('content.repo'), href: data.repo });
+if ('demo' in data && data.demo) links.push({ label: t('content.demo'), href: data.demo });
+---
+
+<BaseLayout
+  lang={lang}
+  title={data.title}
+  description={data.summary}
+  ogType="article"
+  canonicalPath={isFallback ? getRoutePath(route, contentLang, slug) : undefined}
+>
+  <article class="container-page pb-8 pt-14 md:pt-20">
+    <p class="label-mono mb-6">
+      <a href={getRoutePath(route, lang)} class="hover:text-accent">
+        ← {t('content.back', { section: t(`nav.${route}`) })}
+      </a>
+    </p>
+
+    {
+      isFallback && (
+        <div class="mb-8">
+          <TranslationNotice lang={lang} contentLang={contentLang} />
+        </div>
+      )
+    }
+
+    <div lang={isFallback ? localeMeta[contentLang].htmlLang : undefined}>
+      <header class="max-w-3xl">
+        <h1 class="text-4xl font-semibold md:text-5xl">{data.title}</h1>
+        <p class="mt-5 text-lg text-muted">{data.summary}</p>
+      </header>
+    </div>
+
+    <dl class="mt-8 flex flex-wrap gap-x-10 gap-y-4 border-y border-line py-5 text-sm">
+      <div>
+        <dt class="label-mono">{t('content.published')}</dt>
+        <dd class="mt-1">
+          <time datetime={data.date.toISOString().slice(0, 10)}>{formatDate(data.date, lang)}</time>
+          {data.draft && <span class="chip ml-2">{t('content.draft')}</span>}
+        </dd>
+      </div>
+      {
+        facts.map(({ term, value }) => (
+          <div>
+            <dt class="label-mono">{term}</dt>
+            <dd class="mt-1">{value}</dd>
+          </div>
+        ))
+      }
+      {
+        chips.length > 0 && (
+          <div>
+            <dt class="label-mono">{'stack' in data ? t('content.stack') : t('content.tags')}</dt>
+            <dd class="mt-1.5 flex flex-wrap gap-1.5">
+              {chips.map((chip) => (
+                <span class="chip">{chip}</span>
+              ))}
+            </dd>
+          </div>
+        )
+      }
+    </dl>
+
+    {
+      links.length > 0 && (
+        <p class="mt-6 flex flex-wrap gap-3">
+          {links.map(({ label, href }) => (
+            <a href={href} class="btn btn-secondary" rel="noopener">
+              {label}
+            </a>
+          ))}
+        </p>
+      )
+    }
+
+    <div class="prose mt-10" lang={isFallback ? localeMeta[contentLang].htmlLang : undefined}>
+      <Content />
+    </div>
+  </article>
+</BaseLayout>

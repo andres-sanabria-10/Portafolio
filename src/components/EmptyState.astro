@@ -1,0 +1,23 @@
+---
+interface Props {
+  title: string;
+  body: string;
+  /** Nivel del encabezado, para no romper la jerarquía de la página que lo usa. */
+  headingLevel?: 2 | 3;
+}
+
+const { title, body, headingLevel = 2 } = Astro.props;
+const Heading = `h${headingLevel}` as const;
+---
+
+<div class="rounded-ui border border-dashed border-line-strong px-6 py-10 md:px-10">
+  <Heading class="text-lg font-semibold">{title}</Heading>
+  <p class="mt-2 max-w-xl text-muted">{body}</p>
+  {
+    Astro.slots.has('default') && (
+      <div class="mt-6 flex flex-wrap gap-3">
+        <slot />
+      </div>
+    )
+  }
+</div>

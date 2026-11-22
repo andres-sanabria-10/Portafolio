@@ -1,0 +1,60 @@
+---
+import { localeMeta, type Lang } from '../i18n/config';
+import { collectionRoutes, type ContentCollection } from '../i18n/routes';
+import { formatDate, getRoutePath } from '../i18n/utils';
+import type { LocalizedItem } from '../lib/collections';
+
+/**
+ * Listado de entradas de una colección. Las filas se separan con una sola
+ * línea, sin tarjetas. Si una entrada se muestra en otro idioma (falta la
+ * traducción), se indica junto a la fecha.
+ */
+interface Props {
+  collection: ContentCollection;
+  lang: Lang;
+  items: LocalizedItem[];
+  headingLevel?: 2 | 3;
+}
+
+const { collection, lang, items, headingLevel = 2 } = Astro.props;
+const Heading = `h${headingLevel}` as const;
+const route = collectionRoutes[collection];
+
+const chipsOf = (data: LocalizedItem['entry']['data']): string[] =>
+  'stack' in data ? data.stack : data.tags;
+---
+
+<ul class="divide-y divide-line border-y border-line">
+  {
+    items.map(({ entry, slug, contentLang, isFallback }) => (
+      <li>
+        <article class="grid gap-2 py-6 md:grid-cols-[11rem_1fr] md:gap-8">
+          <p class="label-mono md:pt-1">
+            <time datetime={entry.data.date.toISOString().slice(0, 10)}>
+              {formatDate(entry.data.date, lang)}
+            </time>
+            {isFallback && (
+              <span class="mt-1 block text-accent">{localeMeta[contentLang].label}</span>
+            )}
+          </p>
+          <div lang={isFallback ? localeMeta[contentLang].htmlLang : undefined}>
+            <Heading class="text-xl font-semibold">
+              <a
+                href={getRoutePath(route, lang, slug)}
+                class="underline-offset-4 hover:text-accent hover:underline"
+              >
+                {entry.data.title}
+              </a>
+            </Heading>
+            <p class="mt-2 max-w-2xl text-muted">{entry.data.summary}</p>
+            <ul class="mt-3 flex flex-wrap gap-1.5">
+              {chipsOf(entry.data).map((chip) => (
+                <li class="chip">{chip}</li>
+              ))}
+            </ul>
+          </div>
+        </article>
+      </li>
+    ))
+  }
+</ul>

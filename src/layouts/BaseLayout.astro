@@ -1,0 +1,147 @@
+---
+import '@fontsource-variable/inter/wght.css';
+import '@fontsource-variable/jetbrains-mono/wght.css';
+import '../styles/global.css';
+
+import Footer from '../components/Footer.astro';
+import Header from '../components/Header.astro';
+import { defaultLang, localeMeta, locales, type Lang } from '../i18n/config';
+import { getAlternatePath, useTranslations } from '../i18n/utils';
+
+interface Props {
+  lang: Lang;
+  /** Título de la página. Se le añade el nombre del sitio salvo que `fullTitle` sea true. */
+  title: string;
+  description: string;
+  fullTitle?: boolean;
+  /** `false` para páginas sin equivalente en otros idiomas (por ejemplo, la 404). */
+  alternates?: boolean;
+  /** URL canónica distinta de la actual (contenido mostrado como respaldo de otro idioma). */
+  canonicalPath?: string;
+  noindex?: boolean;
+  ogType?: 'website' | 'article';
+}
+
+const {
+  lang,
+  title,
+  description,
+  fullTitle = false,
+  alternates = true,
+  canonicalPath,
+  noindex = false,
+  ogType = 'website',
+} = Astro.props;
+
+const t = useTranslations(lang);
+const pathname = Astro.url.pathname;
+const absolute = (path: string) => new URL(path, Astro.site).href;
+
+const pageTitle = fullTitle ? title : `${title} | ${t('site.name')}`;
+const canonical = absolute(canonicalPath ?? pathname);
+const otherLang = locales.find((locale) => locale !== lang) ?? defaultLang;
+const alternatePath = getAlternatePath(pathname, otherLang);
+const hreflangs = alternates
+  ? locales.map((locale) => ({
+      hreflang: localeMeta[locale].htmlLang,
+      href: absolute(getAlternatePath(pathname, locale)),
+    }))
+  : [];
+---
+
+<!doctype html>
+<html lang={localeMeta[lang].htmlLang} data-theme="dark">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="dark light" />
+    <meta name="theme-color" content="#0b1117" />
+
+    <!--
+      Evita el parpadeo de tema: se ejecuta antes del primer pintado y aplica la
+      preferencia guardada. Oscuro es el valor por defecto; el claro es opcional.
+    -->
+    <script is:inline>
+      (function () {
+        var theme = 'dark';
+        try {
+          if (localStorage.getItem('theme') === 'light') theme = 'light';
+        } catch (error) {
+          /* Almacenamiento bloqueado: se queda en oscuro. */
+        }
+        document.documentElement.dataset.theme = theme;
+        if (theme === 'light') {
+          var meta = document.querySelector('meta[name="theme-color"]');
+          if (meta) meta.setAttribute('content', '#f6f8fa');
+        }
+      })();
+    </script>
+
+    <title>{pageTitle}</title>
+    <meta name="description" content={description} />
+    <meta name="author" content="Andrés Felipe Sanabria" />
+    {noindex && <meta name="robots" content="noindex" />}
+    {!noindex && <link rel="canonical" href={canonical} />}
+    {hreflangs.map(({ hreflang, href }) => <link rel="alternate" hreflang={hreflang} href={href} />)}
+    {
+      alternates && (
+        <link
+          rel="alternate"
+          hreflang="x-default"
+          href={absolute(getAlternatePath(pathname, defaultLang))}
+        />
+      )
+    }
+
+    <meta property="og:type" content={ogType} />
+    <meta property="og:site_name" content={t('site.name')} />
+    <meta property="og:title" content={pageTitle} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:locale" content={localeMeta[lang].ogLocale} />
+    {alternates && <meta property="og:locale:alternate" content={localeMeta[otherLang].ogLocale} />}
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content={pageTitle} />
+    <meta name="twitter:description" content={description} />
+
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="sitemap" href="/sitemap-index.xml" />
+    <meta name="generator" content={Astro.generator} />
+    <!-- Sin JavaScript el botón no puede abrir el menú móvil: se muestra desplegado. -->
+    <noscript>
+      <style>
+        .site-nav-list {
+          display: flex !important;
+          position: static !important;
+        }
+        [data-menu-toggle],
+        [data-theme-toggle] {
+          display: none !important;
+        }
+        .site-header > div {
+          height: auto !important;
+          flex-wrap: wrap;
+        }
+      </style>
+    </noscript>
+    <slot name="head" />
+  </head>
+  <body>
+    <a
+      href="#contenido"
+      class="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:rounded-ui focus:bg-accent focus:px-4 focus:py-2 focus:font-semibold focus:text-on-accent"
+    >
+      {t('a11y.skip')}
+    </a>
+    <Header lang={lang} alternatePath={alternatePath} />
+    <main
+      id="contenido"
+      tabindex="-1"
+      class="flex-1 outline-none"
+      data-pagefind-body={noindex ? undefined : true}
+    >
+      <slot />
+    </main>
+    <Footer lang={lang} />
+  </body>
+</html>

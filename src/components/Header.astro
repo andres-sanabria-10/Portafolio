@@ -1,0 +1,196 @@
+---
+import ListIcon from '@phosphor-icons/core/assets/regular/list.svg';
+import XIcon from '@phosphor-icons/core/assets/regular/x.svg';
+import type { Lang } from '../i18n/config';
+import { navRoutes } from '../i18n/routes';
+import { getRoutePath, isCurrentRoute, useTranslations } from '../i18n/utils';
+import LanguageSwitcher from './LanguageSwitcher.astro';
+import ThemeToggle from './ThemeToggle.astro';
+
+interface Props {
+  lang: Lang;
+  /** Ruta de esta página en el otro idioma (la calcula el layout). */
+  alternatePath: string;
+}
+
+const { lang, alternatePath } = Astro.props;
+const t = useTranslations(lang);
+const pathname = Astro.url.pathname;
+---
+
+<header
+  class="site-header sticky top-0 z-40 border-b border-line bg-bg/90 backdrop-blur-md"
+  data-site-header
+>
+  <div class="container-page flex h-16 items-center justify-between gap-4">
+    <a
+      href={getRoutePath('home', lang)}
+      class="font-semibold tracking-tight text-fg"
+    >
+      {t("site.name")}
+    </a>
+
+    <div class="flex items-center gap-1">
+      <nav aria-label={t('nav.label')} class="site-nav">
+        <ul id="primary-menu" class="site-nav-list">
+          {
+            navRoutes.map((route) => {
+              const current = isCurrentRoute(pathname, route);
+              return (
+                <li>
+                  <a
+                    href={getRoutePath(route, lang)}
+                    aria-current={current ? 'page' : undefined}
+                    class="site-nav-link"
+                  >
+                    {t(`nav.${route}`)}
+                  </a>
+                </li>
+              );
+            })
+          }
+        </ul>
+      </nav>
+
+      <LanguageSwitcher lang={lang} alternatePath={alternatePath} />
+      <ThemeToggle lang={lang} />
+
+      <button
+        type="button"
+        class="icon-button"
+        aria-expanded="false"
+        aria-controls="primary-menu"
+        data-menu-toggle
+      >
+        <span class="sr-only">{t('nav.menu')}</span>
+        <ListIcon class="menu-icon-open" width="22" height="22" aria-hidden="true" />
+        <XIcon class="menu-icon-close" width="22" height="22" aria-hidden="true" />
+      </button>
+    </div>
+  </div>
+</header>
+
+
+<style is:global>
+  .icon-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.75rem;
+    height: 2.75rem;
+    border-radius: var(--radius-ui);
+    color: var(--muted);
+    transition:
+      color 150ms ease,
+      background-color 150ms ease;
+  }
+
+  .icon-button:hover {
+    color: var(--fg);
+    background-color: var(--surface-raised);
+  }
+
+  /* Móvil: panel desplegable bajo la cabecera. */
+  .site-nav-list {
+    display: none;
+    position: absolute;
+    inset-inline: 0;
+    top: 100%;
+    flex-direction: column;
+    padding: 0.5rem 1.25rem 1rem;
+    border-bottom: 1px solid var(--line);
+    background-color: var(--bg);
+  }
+
+  .site-header[data-menu-open] .site-nav-list {
+    display: flex;
+  }
+
+  .site-nav-link {
+    display: flex;
+    align-items: center;
+    min-height: 2.75rem;
+    padding-inline: 0.75rem;
+    border-radius: var(--radius-ui);
+    font-size: 0.9375rem;
+    color: var(--muted);
+    transition: color 150ms ease;
+  }
+
+  .site-nav-link:hover {
+    color: var(--fg);
+  }
+
+  .site-nav-link[aria-current='page'] {
+    color: var(--fg);
+    font-weight: 600;
+    box-shadow: inset 2px 0 0 var(--accent);
+  }
+
+  .menu-icon-close,
+  .site-header[data-menu-open] .menu-icon-open {
+    display: none;
+  }
+
+  .site-header[data-menu-open] .menu-icon-close {
+    display: block;
+  }
+
+  /* Escritorio: lista en línea dentro de la cabecera. */
+  @media (min-width: 64rem) {
+    [data-menu-toggle] {
+      display: none;
+    }
+
+    .site-nav-list {
+      display: flex;
+      position: static;
+      flex-direction: row;
+      gap: 0.125rem;
+      padding: 0;
+      margin-right: 0.5rem;
+      border: 0;
+      background: none;
+    }
+
+    .site-nav-link[aria-current='page'] {
+      box-shadow: inset 0 -2px 0 var(--accent);
+      border-radius: 0;
+    }
+  }
+</style>
+
+<script>
+  const header = document.querySelector<HTMLElement>('[data-site-header]');
+  const toggle = header?.querySelector<HTMLButtonElement>('[data-menu-toggle]');
+  const menu = header?.querySelector<HTMLElement>('#primary-menu');
+
+  if (header && toggle && menu) {
+    const setOpen = (open: boolean) => {
+      header.toggleAttribute('data-menu-open', open);
+      toggle.setAttribute('aria-expanded', String(open));
+    };
+    const isOpen = () => header.hasAttribute('data-menu-open');
+
+    toggle.addEventListener('click', () => setOpen(!isOpen()));
+
+    // Escape cierra el menú y devuelve el foco al botón que lo abrió.
+    document.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape' && isOpen()) {
+        setOpen(false);
+        toggle.focus();
+      }
+    });
+
+    // Se cierra al pulsar fuera, al elegir un enlace o al pasar a escritorio.
+    document.addEventListener('click', (event) => {
+      if (isOpen() && event.target instanceof Node && !header.contains(event.target)) {
+        setOpen(false);
+      }
+    });
+    menu.addEventListener('click', (event) => {
+      if (event.target instanceof Element && event.target.closest('a')) setOpen(false);
+    });
+    window.matchMedia('(min-width: 64rem)').addEventListener('change', () => setOpen(false));
+  }
+</script>

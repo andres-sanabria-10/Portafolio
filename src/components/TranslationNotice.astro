@@ -1,0 +1,35 @@
+---
+import InfoIcon from '@phosphor-icons/core/assets/regular/info.svg';
+import type { Lang } from '../i18n/config';
+import { useTranslations } from '../i18n/utils';
+
+/**
+ * Aviso para contenido sin traducir. Se muestra cuando la página está en
+ * `lang` pero el texto que sigue está escrito en `contentLang`.
+ */
+interface Props {
+  /** Idioma de la página (el de la interfaz). */
+  lang: Lang;
+  /** Idioma real del contenido que se muestra como respaldo. */
+  contentLang: Lang;
+}
+
+const { lang, contentLang } = Astro.props;
+const t = useTranslations(lang);
+---
+
+<aside
+  class="flex max-w-(--container-prose) gap-3 rounded-ui border border-line-strong bg-accent-soft px-4 py-3"
+  role="note"
+  aria-labelledby="translation-notice-title"
+>
+  <InfoIcon class="mt-0.5 shrink-0 text-accent" width="20" height="20" aria-hidden="true" />
+  <div class="text-sm">
+    <p id="translation-notice-title" class="font-semibold">
+      {t('content.translationMissing.title')}
+    </p>
+    <p class="mt-0.5 text-muted">
+      {t('content.translationMissing.body', { language: t(`lang.${contentLang}`) })}
+    </p>
+  </div>
+</aside>

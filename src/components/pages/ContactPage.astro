@@ -1,0 +1,69 @@
+---
+import ArrowUpRightIcon from '@phosphor-icons/core/assets/regular/arrow-up-right.svg';
+import { site } from '../../config/site';
+import type { Lang } from '../../i18n/config';
+import { getRoutePath, useTranslations } from '../../i18n/utils';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import PageHeader from '../PageHeader.astro';
+
+/** Contacto: solo enlaces, sin formulario con backend (evita spam). */
+interface Props {
+  lang: Lang;
+}
+
+const { lang } = Astro.props;
+const t = useTranslations(lang);
+
+const channels = [
+  {
+    name: 'LinkedIn',
+    handle: 'in/andres-felipe-sanabria',
+    href: site.linkedin,
+    body: t('contact.linkedin.body'),
+  },
+  {
+    name: 'GitHub',
+    handle: site.githubUser,
+    href: site.github,
+    body: t('contact.github.body'),
+  },
+  // El correo se añade aquí cuando `site.email` tenga valor (ver src/config/site.ts).
+  ...(site.email
+    ? [{ name: 'Email', handle: site.email, href: `mailto:${site.email}`, body: '' }]
+    : []),
+];
+---
+
+<BaseLayout lang={lang} title={t('contact.title')} description={t('contact.description')}>
+  <PageHeader
+    title={t('contact.title')}
+    lead={t('contact.description')}
+    label={getRoutePath('contact', lang)}
+  />
+
+  <section class="container-page">
+    <ul class="max-w-3xl divide-y divide-line border-y border-line">
+      {
+        channels.map(({ name, handle, href, body }) => (
+          <li>
+            <a href={href} rel="me noopener" class="group flex items-center gap-4 py-6">
+              <span class="flex-1">
+                <span class="flex flex-wrap items-baseline gap-x-3">
+                  <span class="text-xl font-semibold group-hover:text-accent">{name}</span>
+                  <span class="label-mono">{handle}</span>
+                </span>
+                {body && <span class="mt-1 block text-muted">{body}</span>}
+              </span>
+              <ArrowUpRightIcon
+                class="shrink-0 text-muted transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-accent"
+                width="22"
+                height="22"
+                aria-hidden="true"
+              />
+            </a>
+          </li>
+        ))
+      }
+    </ul>
+  </section>
+</BaseLayout>

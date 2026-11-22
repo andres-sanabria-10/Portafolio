@@ -1,0 +1,17 @@
+---
+interface Props {
+  title: string;
+  lead?: string;
+  /** Rótulo técnico opcional sobre el título (por ejemplo, la ruta). */
+  label?: string;
+}
+
+const { title, lead, label } = Astro.props;
+---
+
+<header class="container-page pb-10 pt-14 md:pb-14 md:pt-20">
+  {label && <p class="label-mono mb-4">{label}</p>}
+  <h1 class="max-w-3xl text-4xl font-semibold md:text-5xl">{title}</h1>
+  {lead && <p class="mt-5 max-w-2xl text-lg text-muted">{lead}</p>}
+  <slot />
+</header>

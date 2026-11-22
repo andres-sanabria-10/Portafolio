@@ -1,0 +1,79 @@
+---
+import GithubIcon from '@phosphor-icons/core/assets/regular/github-logo.svg';
+import LinkedinIcon from '@phosphor-icons/core/assets/regular/linkedin-logo.svg';
+import { site } from '../config/site';
+import type { Lang } from '../i18n/config';
+import { navRoutes } from '../i18n/routes';
+import { getRoutePath, useTranslations } from '../i18n/utils';
+
+interface Props {
+  lang: Lang;
+}
+
+const { lang } = Astro.props;
+const t = useTranslations(lang);
+const year = new Date().getFullYear();
+---
+
+<footer class="mt-24 border-t border-line" aria-label={t('footer.label')}>
+  <div class="container-page grid gap-10 py-12 md:grid-cols-[1fr_auto_auto] md:gap-16">
+    <div class="max-w-sm">
+      <p class="font-semibold tracking-tight">{site.author}</p>
+      <p class="label-mono mt-1">extract → transform → load</p>
+      <p class="mt-4 text-sm text-muted">{t('footer.builtWith')}</p>
+    </div>
+
+    <nav aria-label={t('footer.nav')}>
+      <ul class="grid grid-cols-2 gap-x-10 gap-y-1 text-sm">
+        {
+          navRoutes.map((route) => (
+            <li>
+              <a href={getRoutePath(route, lang)} class="footer-link">
+                {t(`nav.${route}`)}
+              </a>
+            </li>
+          ))
+        }
+      </ul>
+    </nav>
+
+    <nav aria-label={t('footer.social')}>
+      <ul class="flex flex-col gap-1 text-sm">
+        <li>
+          <a href={site.github} class="footer-link" rel="me noopener">
+            <GithubIcon width="18" height="18" aria-hidden="true" />
+            GitHub
+          </a>
+        </li>
+        <li>
+          <a href={site.linkedin} class="footer-link" rel="me noopener">
+            <LinkedinIcon width="18" height="18" aria-hidden="true" />
+            LinkedIn
+          </a>
+        </li>
+        <li>
+          <a href={site.repo} class="footer-link" rel="noopener">{t('footer.source')}</a>
+        </li>
+      </ul>
+    </nav>
+  </div>
+
+  <div class="container-page border-t border-line py-5">
+    <p class="label-mono">© {year} {site.author}</p>
+  </div>
+</footer>
+
+<style>
+  .footer-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    min-height: 2.25rem;
+    color: var(--muted);
+    transition: color 150ms ease;
+  }
+
+  .footer-link:hover {
+    color: var(--accent);
+  }
+</style>

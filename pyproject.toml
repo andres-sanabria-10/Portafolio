@@ -1,0 +1,52 @@
+[project]
+name = "portafolio-datos-sinteticos"
+version = "0.1.0"
+description = "Generador de envíos sintéticos para el portafolio (Parquet + JSON de agregados)."
+requires-python = ">=3.11"
+dependencies = [
+    "numpy>=1.26",
+    "pandas>=2.2",
+    "pyarrow>=17",
+]
+
+# No es un paquete instalable: solo scripts. Las dependencias se instalan con
+# `pip install --group dev` (pip >= 25.1), que no deja carpetas *.egg-info.
+[dependency-groups]
+datos = [
+    "numpy>=1.26",
+    "pandas>=2.2",
+    "pyarrow>=17",
+]
+dev = [
+    { include-group = "datos" },
+    "duckdb>=1.1",
+    "pytest>=8",
+    "ruff>=0.8",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["scripts/tests"]
+pythonpath = ["scripts"]
+addopts = "-q"
+
+[tool.ruff]
+target-version = "py311"
+line-length = 100
+src = ["scripts"]
+extend-exclude = ["node_modules", "dist", ".astro"]
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle
+    "W",
+    "F",   # pyflakes
+    "I",   # isort
+    "UP",  # pyupgrade
+    "B",   # bugbear
+    "SIM", # simplificaciones
+    "C4",  # comprehensions
+    "PTH", # pathlib
+    "RUF",
+]
+# El código y los comentarios están en español: tildes y símbolos no son ambiguos aquí.
+ignore = ["RUF001", "RUF002", "RUF003"]

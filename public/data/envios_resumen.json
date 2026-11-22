@@ -1,0 +1,303 @@
+{
+  "metadatos": {
+    "descripcion": "Datos 100 % sintéticos. No representan cifras de ninguna empresa.",
+    "generador": "scripts/generate_sample_data.py",
+    "semilla": 42,
+    "filas": 23105,
+    "guias_unicas": 20000,
+    "periodo": {
+      "desde": "2025-07-01",
+      "hasta": "2026-06-30"
+    },
+    "fecha_generacion": "2026-06-30"
+  },
+  "calidad_sembrada": {
+    "prop_guias_duplicadas": 0.12,
+    "guias_duplicadas": 2400,
+    "filas_sobrantes": 3105,
+    "prop_filas_con_espacios": 0.03,
+    "filas_con_espacios": 693,
+    "guias_distintas_sin_limpiar": 20160
+  },
+  "estados": {
+    "solicitado": 19,
+    "facturado": 57,
+    "despachado": 63,
+    "en_transito": 51,
+    "novedad": 8,
+    "entregado": 19430,
+    "devuelto": 372
+  },
+  "otd_por_transportadora": [
+    {
+      "transportadora": "Transportadora A",
+      "ranking": 1,
+      "entregas": 4164,
+      "entregas_a_tiempo": 4078,
+      "otd_pct": 97.93,
+      "otd_ingenuo_pct": 97.13,
+      "diferencia_pp": -0.8,
+      "dias_transito_promedio": 1.82
+    },
+    {
+      "transportadora": "Transportadora G",
+      "ranking": 2,
+      "entregas": 1819,
+      "entregas_a_tiempo": 1756,
+      "otd_pct": 96.54,
+      "otd_ingenuo_pct": 95.83,
+      "diferencia_pp": -0.71,
+      "dias_transito_promedio": 1.77
+    },
+    {
+      "transportadora": "Transportadora B",
+      "ranking": 3,
+      "entregas": 3337,
+      "entregas_a_tiempo": 3146,
+      "otd_pct": 94.28,
+      "otd_ingenuo_pct": 92.56,
+      "diferencia_pp": -1.72,
+      "dias_transito_promedio": 2.05
+    },
+    {
+      "transportadora": "Transportadora C",
+      "ranking": 4,
+      "entregas": 3091,
+      "entregas_a_tiempo": 2745,
+      "otd_pct": 88.81,
+      "otd_ingenuo_pct": 86.74,
+      "diferencia_pp": -2.07,
+      "dias_transito_promedio": 2.23
+    },
+    {
+      "transportadora": "Transportadora D",
+      "ranking": 5,
+      "entregas": 2850,
+      "entregas_a_tiempo": 2377,
+      "otd_pct": 83.4,
+      "otd_ingenuo_pct": 76.21,
+      "diferencia_pp": -7.19,
+      "dias_transito_promedio": 2.43
+    },
+    {
+      "transportadora": "Transportadora E",
+      "ranking": 6,
+      "entregas": 2378,
+      "entregas_a_tiempo": 1973,
+      "otd_pct": 82.97,
+      "otd_ingenuo_pct": 78.88,
+      "diferencia_pp": -4.08,
+      "dias_transito_promedio": 2.78
+    },
+    {
+      "transportadora": "Transportadora F",
+      "ranking": 7,
+      "entregas": 1791,
+      "entregas_a_tiempo": 1267,
+      "otd_pct": 70.74,
+      "otd_ingenuo_pct": 65.96,
+      "diferencia_pp": -4.79,
+      "dias_transito_promedio": 3.46
+    }
+  ],
+  "tiempo_promedio_por_etapa": {
+    "general": [
+      {
+        "etapa": "solicitud_a_factura",
+        "horas_promedio": 9.4
+      },
+      {
+        "etapa": "factura_a_despacho",
+        "horas_promedio": 21.2
+      },
+      {
+        "etapa": "despacho_a_entrega",
+        "horas_promedio": 54.7
+      }
+    ],
+    "por_transportadora": [
+      {
+        "transportadora": "Transportadora A",
+        "solicitud_a_factura": 9.4,
+        "factura_a_despacho": 15.1,
+        "despacho_a_entrega": 43.6
+      },
+      {
+        "transportadora": "Transportadora B",
+        "solicitud_a_factura": 9.6,
+        "factura_a_despacho": 19.0,
+        "despacho_a_entrega": 49.2
+      },
+      {
+        "transportadora": "Transportadora C",
+        "solicitud_a_factura": 9.3,
+        "factura_a_despacho": 23.1,
+        "despacho_a_entrega": 53.6
+      },
+      {
+        "transportadora": "Transportadora D",
+        "solicitud_a_factura": 9.4,
+        "factura_a_despacho": 20.9,
+        "despacho_a_entrega": 58.2
+      },
+      {
+        "transportadora": "Transportadora E",
+        "solicitud_a_factura": 9.6,
+        "factura_a_despacho": 28.3,
+        "despacho_a_entrega": 66.8
+      },
+      {
+        "transportadora": "Transportadora F",
+        "solicitud_a_factura": 9.3,
+        "factura_a_despacho": 34.4,
+        "despacho_a_entrega": 83.1
+      },
+      {
+        "transportadora": "Transportadora G",
+        "solicitud_a_factura": 9.5,
+        "factura_a_despacho": 13.2,
+        "despacho_a_entrega": 42.4
+      }
+    ]
+  },
+  "volumen_por_mes": [
+    {
+      "mes": "2025-07",
+      "envios": 1436,
+      "entregados": 1413,
+      "otd_pct": 89.67
+    },
+    {
+      "mes": "2025-08",
+      "envios": 1457,
+      "entregados": 1431,
+      "otd_pct": 89.8
+    },
+    {
+      "mes": "2025-09",
+      "envios": 1555,
+      "entregados": 1521,
+      "otd_pct": 88.17
+    },
+    {
+      "mes": "2025-10",
+      "envios": 1790,
+      "entregados": 1758,
+      "otd_pct": 89.42
+    },
+    {
+      "mes": "2025-11",
+      "envios": 1719,
+      "entregados": 1689,
+      "otd_pct": 89.82
+    },
+    {
+      "mes": "2025-12",
+      "envios": 1929,
+      "entregados": 1894,
+      "otd_pct": 88.75
+    },
+    {
+      "mes": "2026-01",
+      "envios": 1492,
+      "entregados": 1458,
+      "otd_pct": 87.79
+    },
+    {
+      "mes": "2026-02",
+      "envios": 1477,
+      "entregados": 1451,
+      "otd_pct": 89.87
+    },
+    {
+      "mes": "2026-03",
+      "envios": 1799,
+      "entregados": 1762,
+      "otd_pct": 89.84
+    },
+    {
+      "mes": "2026-04",
+      "envios": 1763,
+      "entregados": 1729,
+      "otd_pct": 89.18
+    },
+    {
+      "mes": "2026-05",
+      "envios": 1835,
+      "entregados": 1810,
+      "otd_pct": 88.51
+    },
+    {
+      "mes": "2026-06",
+      "envios": 1748,
+      "entregados": 1514,
+      "otd_pct": 90.36
+    }
+  ],
+  "reexpediciones": {
+    "total": 1583,
+    "pct_sobre_envios": 7.92,
+    "por_destino": [
+      {
+        "ciudad_destino": "Riohacha",
+        "envios": 486,
+        "reexpediciones": 320,
+        "pct": 65.84
+      },
+      {
+        "ciudad_destino": "Yopal",
+        "envios": 270,
+        "reexpediciones": 192,
+        "pct": 71.11
+      },
+      {
+        "ciudad_destino": "Florencia",
+        "envios": 231,
+        "reexpediciones": 170,
+        "pct": 73.59
+      },
+      {
+        "ciudad_destino": "Quibdó",
+        "envios": 194,
+        "reexpediciones": 132,
+        "pct": 68.04
+      },
+      {
+        "ciudad_destino": "Arauca",
+        "envios": 160,
+        "reexpediciones": 105,
+        "pct": 65.62
+      },
+      {
+        "ciudad_destino": "Mocoa",
+        "envios": 118,
+        "reexpediciones": 85,
+        "pct": 72.03
+      },
+      {
+        "ciudad_destino": "San Andrés",
+        "envios": 118,
+        "reexpediciones": 81,
+        "pct": 68.64
+      },
+      {
+        "ciudad_destino": "San José del Guaviare",
+        "envios": 110,
+        "reexpediciones": 79,
+        "pct": 71.82
+      },
+      {
+        "ciudad_destino": "Puerto Carreño",
+        "envios": 104,
+        "reexpediciones": 74,
+        "pct": 71.15
+      },
+      {
+        "ciudad_destino": "Inírida",
+        "envios": 90,
+        "reexpediciones": 71,
+        "pct": 78.89
+      }
+    ]
+  }
+}
