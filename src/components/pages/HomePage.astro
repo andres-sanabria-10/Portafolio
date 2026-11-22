@@ -11,10 +11,14 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 import { getLocalizedCollection } from '../../lib/collections';
 import EmptyState from '../EmptyState.astro';
 import EntryList from '../EntryList.astro';
+import FeaturedProjects from '../FeaturedProjects.astro';
+import StackSection from '../StackSection.astro';
+import PipelineFlow from '../vue/PipelineFlow.vue';
+import type { PipelineStage } from '../vue/pipeline';
 
 /**
- * Inicio (esqueleto de la fase 1). La fase 2 añade aquí la animación del
- * pipeline (`PipelineFlow.vue`), las tarjetas de proyectos y el stack agrupado.
+ * Inicio: hero, animación del pipeline, proyectos destacados, últimas notas
+ * de Aprende y stack agrupado por etapa.
  */
 interface Props {
   lang: Lang;
@@ -28,6 +32,13 @@ const featured = (await getLocalizedCollection('proyectos', lang))
   .slice(0, 3);
 const latestNotes = (await getLocalizedCollection('aprende', lang)).slice(0, 3);
 
+const stageIds = ['source', 'ingest', 'transform', 'store', 'serve'] as const;
+const stages: PipelineStage[] = stageIds.map((id) => ({
+  id,
+  label: t(`home.pipeline.${id}`),
+  detail: t(`home.pipeline.${id}.detail`),
+}));
+
 // Nombres de columna en snake_case, como en una tabla de esquema.
 const profile = [
   { column: 'role', value: t('home.profile.role') },
@@ -39,7 +50,7 @@ const profile = [
 ---
 
 <BaseLayout lang={lang} title={t('home.title')} description={t('site.description')} fullTitle>
-  <section class="container-page grid gap-12 pb-16 pt-14 md:pt-20 lg:grid-cols-[1.9fr_1fr] lg:items-end lg:gap-16 lg:pb-24">
+  <section class="container-page grid gap-12 pb-16 pt-14 md:pt-20 lg:grid-cols-[1.6fr_1fr] lg:items-end lg:gap-16 lg:pb-24">
     <div>
       <h1 class="text-3xl font-semibold sm:text-5xl">
         {t('home.hero.title')}
@@ -87,30 +98,52 @@ const profile = [
       </div>
       <table class="w-full border-y border-line text-sm">
         <caption class="sr-only">{t('home.profile.caption')}</caption>
-      <tbody class="divide-y divide-line">
-        {
-          profile.map(({ column, value }) => (
-            <tr>
-              <th scope="row" class="label-mono w-32 py-3 pr-4 text-left font-normal">
-                {column}
-              </th>
-              <td class="py-3">{value}</td>
-            </tr>
-          ))
-        }
-      </tbody>
+        <tbody class="divide-y divide-line">
+          {
+            profile.map(({ column, value }) => (
+              <tr>
+                <th scope="row" class="label-mono w-32 py-3 pr-4 text-left font-normal">
+                  {column}
+                </th>
+                <td class="py-3">{value}</td>
+              </tr>
+            ))
+          }
+        </tbody>
       </table>
     </div>
   </section>
 
-  <section class="container-page py-12" aria-labelledby="featured-title">
-    <div class="mb-6 flex flex-wrap items-baseline justify-between gap-x-6 gap-y-2">
-      <h2 id="featured-title" class="text-2xl font-semibold">{t('home.featured.title')}</h2>
+  <section class="border-y border-line bg-surface" aria-labelledby="pipeline-title">
+    <div class="container-page py-14 md:py-20">
+      <div class="max-w-2xl">
+        <h2 id="pipeline-title" class="text-2xl font-semibold md:text-3xl">
+          {t('home.pipeline.title')}
+        </h2>
+        <p class="mt-4 text-muted">{t('home.pipeline.body')}</p>
+      </div>
+      <div class="mt-10 md:mt-12">
+        <PipelineFlow
+          client:visible
+          stages={stages}
+          label={t('home.pipeline.label')}
+          pauseLabel={t('home.pipeline.pause')}
+          playLabel={t('home.pipeline.play')}
+          rawLabel={t('home.pipeline.raw')}
+          validatedLabel={t('home.pipeline.validated')}
+        />
+      </div>
+    </div>
+  </section>
+
+  <section class="container-page pb-12 pt-16 md:pt-20" aria-labelledby="featured-title">
+    <div class="mb-8 flex flex-wrap items-baseline justify-between gap-x-6 gap-y-2">
+      <h2 id="featured-title" class="text-2xl font-semibold md:text-3xl">{t('home.featured.title')}</h2>
       <a href={getRoutePath('projects', lang)} class="link text-sm">{t('home.featured.all')}</a>
     </div>
     {
       featured.length > 0 ? (
-        <EntryList collection="proyectos" lang={lang} items={featured} headingLevel={3} />
+        <FeaturedProjects lang={lang} items={featured} />
       ) : (
         <EmptyState
           title={t('projects.empty.title')}
@@ -122,8 +155,8 @@ const profile = [
   </section>
 
   <section class="container-page py-12" aria-labelledby="latest-title">
-    <div class="mb-6 flex flex-wrap items-baseline justify-between gap-x-6 gap-y-2">
-      <h2 id="latest-title" class="text-2xl font-semibold">{t('home.latest.title')}</h2>
+    <div class="mb-8 flex flex-wrap items-baseline justify-between gap-x-6 gap-y-2">
+      <h2 id="latest-title" class="text-2xl font-semibold md:text-3xl">{t('home.latest.title')}</h2>
       <a href={getRoutePath('learn', lang)} class="link text-sm">{t('home.latest.all')}</a>
     </div>
     {
@@ -133,5 +166,13 @@ const profile = [
         <EmptyState title={t('learn.empty.title')} body={t('learn.empty.body')} headingLevel={3} />
       )
     }
+  </section>
+
+  <section class="container-page pb-20 pt-12 md:pb-24" aria-labelledby="stack-title">
+    <div class="mb-10 max-w-2xl">
+      <h2 id="stack-title" class="text-2xl font-semibold md:text-3xl">{t('home.stack.title')}</h2>
+      <p class="mt-3 text-muted">{t('home.stack.body')}</p>
+    </div>
+    <StackSection lang={lang} />
   </section>
 </BaseLayout>

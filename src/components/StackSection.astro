@@ -1,0 +1,42 @@
+---
+import type { Lang } from '../i18n/config';
+import { stackGroups } from '../i18n/stack';
+import { useTranslations } from '../i18n/utils';
+
+/**
+ * Stack agrupado por etapa del pipeline. Cada grupo lleva el mismo marcador
+ * que las cajas de la animación, para que se lea como una continuación de ella.
+ */
+interface Props {
+  lang: Lang;
+}
+
+const { lang } = Astro.props;
+const t = useTranslations(lang);
+---
+
+<ul class="grid gap-x-10 gap-y-10 sm:grid-cols-2 lg:grid-cols-3">
+  {
+    stackGroups.map((group) => (
+      <li class="border-t border-line pt-5">
+        <h3 class="flex items-center gap-3 font-semibold">
+          <span class="inline-block h-3 w-4 rounded-[3px] border border-line-strong" aria-hidden="true" />
+          {group.title[lang]}
+        </h3>
+        <ul class="mt-4 space-y-3">
+          {group.items.map((item) => (
+            <li>
+              <span class="font-medium">{item.name}</span>
+              {item.learning && (
+                <span class="label-mono ml-2 rounded-ui bg-accent-soft px-1.5 py-0.5 text-accent">
+                  {t('home.stack.learning')}
+                </span>
+              )}
+              {item.note && <span class="block text-sm text-muted">{item.note[lang]}</span>}
+            </li>
+          ))}
+        </ul>
+      </li>
+    ))
+  }
+</ul>
