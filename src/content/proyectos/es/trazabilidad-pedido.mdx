@@ -1,10 +1,10 @@
 ---
 title: Trazabilidad de punta a punta del pedido
-summary: ETL en Python que integra las APIs REST y SOAP de 7 transportadoras, normaliza sus estados a un modelo común y une todas las etapas del pedido en SQL Server para medir el tiempo de cada una y la entrega a tiempo (OTD).
+summary: Pipeline en Python que integra las APIs de 7 transportadoras (REST y SOAP) con carga incremental y capas raw, staging y modelo en SQL Server, normaliza sus estados a un modelo común y mide tiempos por ruta, entrega a tiempo (OTD) y flete frente a la venta.
 # TODO(Andrés): fecha real del proyecto (también define el orden en los listados).
 date: 2026-06-01
 stack: [Python, pandas, APIs REST, SOAP, SQL Server, Power BI]
-flow: [APIs REST y SOAP, Ingesta en Python, staging, Modelo de estados, fact_envios, Power BI]
+flow: [APIs REST y SOAP, Ingesta incremental (raw), Staging, Mapeo de estados, fact_envios, Power BI]
 role: Diseño y desarrollo del ETL y del modelo de estados
 # TODO(Andrés): confirmar el estado.
 status: en producción
@@ -40,10 +40,11 @@ export const calidad = resumen.calidad_sembrada;
 export const meta = resumen.metadatos;
 
 {/*
-  Borrador de la fase 3. Revisar con Andrés antes de publicar:
-  - Las decisiones técnicas y las alternativas descartadas (están redactadas a partir de la especificación).
-  - Las métricas de "Resultados" (TODO).
-  - Cuántas transportadoras son REST y cuántas SOAP (src/i18n/trazabilidad.ts).
+  Borrador. Antes de publicar:
+  - La arquitectura por capas (raw, staging, tabla de mapeo de estados, cargas que no
+    pisan con NULL) debe estar implementada en el pipeline de la empresa: Andrés la está
+    ajustando. Todo lo que dice este caso tiene que ser cierto en producción.
+  - Completar las métricas reales de "Resultados" (TODO).
 */}
 
 ## Contexto y problema
@@ -56,7 +57,12 @@ Las preguntas de negocio eran tres: **¿dónde se demora el envío?**, **¿qué 
 
 ## Arquitectura
 
-El pipeline toma los datos de los sistemas internos y de las APIs de 7 transportadoras, los normaliza a un modelo común y los deja en una tabla de hechos con una fila por guía. Sobre esa tabla se calculan los tiempos y el OTD, y Power BI los presenta.
+El pipeline toma los datos del ERP y de las APIs de 7 transportadoras y los lleva por capas, de lo crudo a lo listo para medir:
+
+- **Raw:** la respuesta de cada API tal como llegó, con la fecha de carga. Permite reprocesar sin volver a llamar a las APIs.
+- **Staging:** el dato limpio y tipado: llaves sin espacios, ciudades normalizadas, fechas parseadas y `NULL` en lugar de valores de relleno.
+- **Modelo:** `fact_eventos_guia` (una fila por evento) y `fact_envios` (una fila por guía, con su último estado y la fecha de cada etapa), con sus dimensiones.
+- **Consumo:** las métricas de tiempos, OTD y flete, que Power BI presenta.
 
 Haz clic en cada etapa (o recórrelas con el teclado) para ver qué datos entran, qué transformación se aplica y qué problema resolví en ella.
 
@@ -64,50 +70,104 @@ Haz clic en cada etapa (o recórrelas con el teclado) para ver qué datos entran
 
 ## Decisiones técnicas
 
-{/* TODO(Andrés): confirmar que estas decisiones y alternativas reflejan lo que pasó. */}
+**Un adaptador por transportadora y un cliente HTTP compartido.** Seis transportadoras responden REST con JSON y una SOAP con XML, cada una con su autenticación (token, llave en parámetros o login con JWT) y sus límites. Cada integración es un adaptador pequeño que entrega siempre el mismo formato; todas usan el mismo cliente HTTP, que reintenta con espera exponencial ante cortes de red y respuestas 429 (respetando `Retry-After`) y renueva el token una vez si vence. Agregar una transportadora es escribir un adaptador, no tocar el resto del pipeline.
 
-**Un adaptador por transportadora, con una salida común.** Cada transportadora tiene su API: unas responden REST con JSON y otras SOAP con XML, con autenticación y nombres de estado propios. En lugar de un script por transportadora, cada integración es un adaptador pequeño que devuelve siempre las mismas columnas (guía, estado de origen, fecha del evento). Agregar una transportadora nueva es escribir un adaptador, no tocar el resto del pipeline. *Descarté* un script monolítico con un `if` por transportadora: funcionaba con dos, pero con siete se volvía imposible de probar.
+**Carga incremental con marca de agua.** Cada corrida parte de la última fecha cargada y pide solo lo nuevo, en ventanas de fechas contiguas ajustadas al límite de cada API. Las guías que aún no tienen estado final se vuelven a consultar hasta cerrarse. *Descarté* recargar todo en cada corrida: con siete APIs y límites de peticiones, no escala.
 
-**Guardar el dato crudo antes de transformarlo.** La ingesta deja la respuesta de cada API en staging tal como llegó, y la normalización corre después. Si cambia una regla (por ejemplo, qué cuenta como "entregado"), se reprocesa desde staging sin volver a consultar las APIs. *Descarté* transformar en memoria y guardar solo el resultado: era más simple, pero perdía la trazabilidad de qué dijo cada transportadora.
+**Capas raw, staging y modelo.** El crudo se guarda tal como llegó; la limpieza vive en staging y el modelo se construye después. Si cambia una regla (por ejemplo, cómo se mapea un estado), se reprocesa desde raw sin volver a consultar las APIs, y cada regla de limpieza existe en un solo lugar. *Descarté* limpiar en el tablero: las reglas quedaban repartidas entre scripts, Power Query y DAX.
 
-**Un modelo común de estados con un mapeo explícito.** Cada estado de origen se traduce con una tabla de mapeo por transportadora a cinco estados comunes. Un estado que no está en el mapeo se reporta para revisarlo, no se descarta. *Descarté* reglas por texto (por ejemplo, "si contiene *entreg*, es entregado"): son cómodas al inicio y fallan en silencio cuando una transportadora cambia su redacción.
+**Cargas idempotentes.** Volver a correr una carga no duplica guías ni eventos (cada evento es único por guía y estado), y la actualización usa `COALESCE`: un campo que llega vacío en la API no borra uno que ya existía. Cada guía se guarda en su propia transacción, así que un fallo aislado no tumba la corrida.
 
-**Grano de una fila por guía en `fact_envios`.** La tabla de hechos tiene exactamente una fila por guía, con las fechas de cada etapa. El historial de eventos queda aparte. Ese grano es el que evita contar dos veces una guía, como se ve en la sección de calidad de datos.
+**Un modelo común de estados en una tabla de mapeo versionada.** Una tabla `(transportadora, estado de origen, estado común)` traduce el vocabulario de cada una a tres estados comunes: recogida, en tránsito y entregado. Un estado que no está en la tabla se reporta para revisarlo. *Descarté* reglas por texto (por ejemplo, "si contiene *entreg*, es entregado"): son cómodas al inicio y fallan en silencio cuando una transportadora cambia su redacción.
+
+**Reglas de negocio centralizadas.** La fecha prometida se calcula igual para todas las transportadoras: fecha del primer estado más 2 días a ciudades principales o 3 al resto, con las ciudades normalizadas (sin tildes ni diferencias de mayúsculas). Las reexpediciones salen de una tabla de referencia de destinos con su tiempo adicional. Así el cumplimiento es comparable entre transportadoras.
+
+**Grano de una fila por guía en `fact_envios`.** La tabla de hechos tiene exactamente una fila por guía, con su último estado (una sola regla, determinista) y la fecha de cada etapa ya calculada. El historial de eventos queda en `fact_eventos_guia`. Ese grano es el que evita contar dos veces una guía, como se ve en la sección de calidad de datos.
 
 **Comparar transportadoras por ruta, no por promedio general.** Cada transportadora atiende rutas distintas: una que cubre destinos lejanos o de difícil acceso siempre se vería peor en un promedio general. Por eso el tiempo de entrega se calcula por ruta (origen–destino) y transportadora, y solo se comparan transportadoras que comparten la misma ruta. Así la pregunta pasa de "¿quién es más lento?" a "¿quién es más lento yendo al mismo lugar?".
 
-**SQL Server como fuente de verdad; Power BI como presentación.** Los indicadores se calculan y se validan en SQL. Power BI los muestra y permite filtrarlos, pero si un número del tablero no coincide con la consulta, el que está mal es el tablero.
+**SQL Server como fuente de verdad, con métricas definidas por escrito.** Los indicadores se calculan y se validan en SQL; Power BI los muestra y permite filtrarlos. Cada métrica tiene una definición escrita. Por ejemplo, el OTD es el porcentaje de guías entregadas cuya entrega fue igual o anterior a la fecha prometida; las guías en tránsito no cuentan todavía. Si un número del tablero no coincide con la consulta, el que está mal es el tablero.
 
 ## Partes interesantes del código
 
 Los fragmentos están simplificados y usan nombres genéricos y datos sintéticos.
 
-**Normalizar estados a un modelo común.** Cada transportadora nombra sus estados a su manera; el mapeo los traduce y deja visibles los que no reconoce.
+**Un cliente HTTP que aguanta fallos pasajeros.** Todos los adaptadores llaman a las APIs a través de esta función. Si se agotan los reintentos, la guía queda pendiente y se vuelve a consultar en la siguiente corrida.
+
+```python
+import time
+from collections.abc import Callable
+
+import requests
+
+TRANSITORIOS = (requests.ConnectionError, requests.Timeout)
+
+
+def solicitar(
+    hacer: Callable[[], requests.Response],
+    *,
+    intentos: int = 5,
+    renovar_token: Callable[[], None] | None = None,
+) -> requests.Response:
+    """Reintenta cortes de red y 429 con espera exponencial; renueva el token una vez."""
+    renovado = False
+    for intento in range(intentos):
+        try:
+            resp = hacer()
+        except TRANSITORIOS:
+            time.sleep(2 ** (intento + 1))
+            continue
+        if resp.status_code == 429:  # límite de peticiones: respetar Retry-After
+            time.sleep(int(resp.headers.get("Retry-After") or 2 ** (intento + 1)))
+            continue
+        if resp.status_code in (401, 403) and renovar_token and not renovado:
+            renovar_token()  # token vencido: un solo re-login
+            renovado = True
+            continue
+        return resp
+    raise RuntimeError(f"Sin respuesta tras {intentos} intentos")
+```
+
+**Normalizar estados con una tabla de mapeo.** El mapeo es dato, no código: vive en una tabla versionada, y lo que no está en ella se reporta en lugar de pasar con su texto crudo.
 
 ```python
 import pandas as pd
 
-# Estado de origen -> estado común. Una tabla por transportadora (extracto).
-MAPA_ESTADOS: dict[str, dict[str, str]] = {
-    "Transportadora A": {"RECOGIDO": "despachado", "EN RUTA": "en_transito",
-                         "NOVEDAD": "novedad", "ENTREGADO": "entregado"},
-    "Transportadora D": {"01": "despachado", "02": "en_transito",
-                         "08": "novedad", "05": "entregado", "09": "devuelto"},
-}
 
+def normalizar_estados(
+    eventos: pd.DataFrame, mapeo: pd.DataFrame
+) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """Devuelve (normalizados, sin_mapear). Nada pasa en silencio.
 
-def normalizar_estados(crudo: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
-    """Devuelve (normalizados, sin_mapear). Nada se descarta en silencio."""
-    df = crudo.assign(
-        guia=crudo["guia"].str.strip(),  # las llaves llegan con espacios
-        estado_origen=crudo["estado_origen"].astype(str).str.strip().str.upper(),
+    `mapeo` tiene las columnas: transportadora, estado_origen, estado_comun
+    (recogida | en_transito | entregado).
+    """
+    limpio = eventos.assign(
+        guia=eventos["guia"].str.strip(),
+        estado_origen=eventos["estado_origen"].str.strip().str.upper(),
     )
-    df["estado"] = [
-        MAPA_ESTADOS.get(transp, {}).get(estado)
-        for transp, estado in zip(df["transportadora"], df["estado_origen"])
-    ]
-    sin_mapear = df[df["estado"].isna()]
-    return df.dropna(subset=["estado"]), sin_mapear
+    unido = limpio.merge(mapeo, on=["transportadora", "estado_origen"], how="left")
+    sin_mapear = unido[unido["estado_comun"].isna()]
+    return unido.dropna(subset=["estado_comun"]), sin_mapear
+```
+
+**Carga idempotente.** Correr dos veces la misma carga deja la tabla igual, y un campo vacío en la API no borra el que ya existía.
+
+```sql
+MERGE fact_envios AS destino
+USING stg_guias AS origen
+    ON destino.guia = origen.guia
+WHEN MATCHED THEN UPDATE SET
+    -- COALESCE: si la API devolvió el campo vacío, se conserva el valor anterior.
+    destino.valor_flete = COALESCE(origen.valor_flete, destino.valor_flete),
+    destino.peso_kg     = COALESCE(origen.peso_kg,     destino.peso_kg),
+    destino.url_guia    = COALESCE(origen.url_guia,    destino.url_guia),
+    destino.fecha_carga = origen.fecha_carga
+WHEN NOT MATCHED BY TARGET THEN
+    INSERT (guia, transportadora, ciudad_origen, ciudad_destino,
+            valor_flete, peso_kg, url_guia, fecha_carga)
+    VALUES (origen.guia, origen.transportadora, origen.ciudad_origen, origen.ciudad_destino,
+            origen.valor_flete, origen.peso_kg, origen.url_guia, origen.fecha_carga);
 ```
 
 **OTD con una fila por guía.** La versión en T-SQL que corre sobre SQL Server: limpia la llave, se queda con el estado más avanzado de cada guía y solo entonces cuenta.
@@ -168,45 +228,73 @@ En el camino apareció un segundo problema, más pequeño pero igual de traicion
 
 > **Lección:** valida siempre el BI contra SQL. Un tablero puede verse impecable y estar contando mal.
 
+Otros tres errores reales que encontré validando el dato y que hoy el pipeline evita:
+
+- **Una API con la fecha final exclusiva.** Su rango era `[inicio, fin)`: el día final no se incluía. Al paginar avanzando un día de más se perdía 1 de cada 3 días, y apareció como un 29,4 % de guías sin flete. Se corrigió paginando con ventanas contiguas, y ese porcentaje quedó como chequeo.
+- **NIT con el dígito de verificación pegado.** Algunos NIT llegaban como un solo número de 10 dígitos y no cabían en la columna entera. Staging separa el dígito de verificación antes de cargar.
+- **Una actualización que borraba datos.** Si la API devolvía vacío un campo que la guía ya tenía, la actualización lo dejaba en `NULL`. Ahora la carga usa `COALESCE` y conserva el valor anterior.
+
 **El mismo error, reproducido con datos sintéticos.** Para poder mostrarlo sin exponer datos reales, el dataset sintético de este sitio trae los dos problemas sembrados a propósito: {n(calidad.guias_duplicadas)} guías repetidas por tener varios estados y {n(calidad.filas_con_espacios)} filas con espacios al inicio de la llave (por eso `COUNT(DISTINCT guia)` da {n(calidad.guias_distintas_sin_limpiar)} en lugar de {n(meta.guias_unicas)}). Con esos datos, la {peor.transportadora} pasa de un OTD de {n(peor.otd_pct)} % a {n(peor.otd_ingenuo_pct)} % si se cuentan filas en lugar de guías: {n(Math.abs(peor.diferencia_pp))} puntos menos. *Cifras 100 % sintéticas: no son datos de ninguna empresa.* Puedes comprobarlo tú con la consulta "El error de contar filas en vez de guías" del playground al final de esta página.
 
-Además de esa validación, el pipeline revisa en cada carga:
+Además, el pipeline revisa en cada carga:
 
-- **Estados sin mapear:** cualquier estado de origen que no esté en el mapeo se reporta.
+- **Estados sin mapear:** cualquier estado de origen que no esté en la tabla de mapeo se reporta.
 - **Unicidad del grano:** `fact_envios` debe tener una sola fila por guía.
+- **Los estados cuadran:** las guías por estado final suman el total de guías.
 - **Orden de las fechas:** factura ≤ despacho ≤ entrega.
-- **Guías huérfanas:** guías que reporta una transportadora pero no existen en el ERP, y al revés.
+- **Sin valores de relleno:** nada de "NO DISPONIBLE", peso 0 o fechas `1900-01-01`; lo que no se conoce es `NULL`.
+- **Guías sin cruce:** guías que reporta una transportadora y no existen en el ERP, y al revés.
 
-{/* TODO(Andrés): confirmar cuáles de estas validaciones están automatizadas y cuáles se revisan a mano. */}
+{/* TODO(Andrés): confirmar que estas validaciones quedaron en el pipeline de la empresa. */}
 
 ## Del envío al costo: flete vs venta
 
-Además de los tiempos, el modelo une cada guía con la factura que transporta. Así se calcula, guía por guía, cuánto cuesta el flete frente al valor de la venta.
+Además de los tiempos, el modelo une cada guía con las facturas que transporta, a través de una tabla puente factura–guía. Así se calcula cuánto cuesta el flete frente al valor de la venta.
 
-La meta de la empresa es que ningún flete supere el **1 % del valor de lo que lleva**. Un semáforo marca en rojo las guías que se pasan y muestra la diferencia, para revisar tarifas, consolidar despachos o renegociar con la transportadora. Un segundo análisis calcula el costo del flete por kg según el destino y la transportadora.
+Hay un detalle de grano: una guía puede llevar varias facturas, pero la transportadora cobra un solo flete por guía. Para comparar flete y venta por factura, el flete se **prorratea** según el peso de cada factura en la venta de la guía (y por partes iguales si la venta es cero).
+
+La meta de la empresa es que ningún flete supere el **1 % del valor de lo que lleva**. Un semáforo marca en rojo lo que se pasa y muestra la diferencia, para revisar tarifas, consolidar despachos o renegociar con la transportadora. Un segundo análisis calcula el costo del flete por kg según el destino y la transportadora.
 
 Ilustrativo, con nombres genéricos:
 
 ```sql
--- Flete frente a venta, guía por guía, con semáforo contra la meta del 1 %.
+-- Flete prorrateado por factura y semáforo contra la meta del 1 %.
+WITH por_factura AS (
+    SELECT
+        p.guia,
+        p.factura_id,
+        f.valor_venta,
+        e.valor_flete,
+        SUM(f.valor_venta) OVER (PARTITION BY p.guia) AS venta_de_la_guia,
+        COUNT(*)           OVER (PARTITION BY p.guia) AS facturas_de_la_guia
+    FROM puente_factura_guia AS p
+    JOIN fact_facturas AS f ON f.factura_id = p.factura_id
+    JOIN fact_envios   AS e ON e.guia = p.guia
+    WHERE e.valor_flete IS NOT NULL
+),
+prorrateo AS (
+    SELECT
+        *,
+        CASE
+            WHEN venta_de_la_guia > 0
+                THEN valor_flete * valor_venta / venta_de_la_guia
+            ELSE valor_flete / facturas_de_la_guia  -- sin venta: partes iguales
+        END AS flete_asignado
+    FROM por_factura
+)
 SELECT
-    e.guia,
-    e.transportadora,
-    f.valor_venta,
-    e.valor_flete,
-    CAST(100.0 * e.valor_flete / NULLIF(f.valor_venta, 0) AS DECIMAL(6, 2)) AS flete_pct_venta,
+    guia,
+    factura_id,
+    valor_venta,
+    flete_asignado,
+    CAST(100.0 * flete_asignado / NULLIF(valor_venta, 0) AS DECIMAL(6, 2)) AS flete_pct_venta,
+    CASE WHEN flete_asignado <= 0.01 * valor_venta THEN 'verde' ELSE 'rojo' END AS semaforo,
+    -- Cuánto se pasa de la meta, en pesos (0 si está en verde).
     CASE
-        WHEN e.valor_flete <= 0.01 * f.valor_venta THEN 'verde'
-        ELSE 'rojo'
-    END AS semaforo,
-    -- Cuánto se pasa la guía de la meta, en pesos (0 si está en verde).
-    CASE
-        WHEN e.valor_flete > 0.01 * f.valor_venta THEN e.valor_flete - 0.01 * f.valor_venta
+        WHEN flete_asignado > 0.01 * valor_venta THEN flete_asignado - 0.01 * valor_venta
         ELSE 0
     END AS exceso_sobre_meta
-FROM fact_envios AS e
-JOIN fact_facturas AS f ON f.factura_id = e.factura_id
-WHERE e.fecha_despacho IS NOT NULL;
+FROM prorrateo;
 ```
 
 ### El tablero, reproducido con datos sintéticos
@@ -224,17 +312,17 @@ Las dos vistas que más uso: la matriz de tiempos por ruta y transportadora, que
 - Por primera vez existe una línea de tiempo completa de cada envío, de la factura a la entrega, en una sola tabla.
 - El ranking de OTD por transportadora se calcula con la misma regla para las siete.
 - Tiempo promedio por ruta y transportadora, para comparar transportadoras en igualdad de condiciones.
-- Control de costos: flete vs venta por guía con semáforo y la meta de que ningún flete supere el 1 % de la venta; además, el costo del flete por kg según destino.
+- Control de costos: flete vs venta con el flete prorrateado por factura, semáforo y la meta de que ningún flete supere el 1 % de la venta; además, el costo del flete por kg según destino.
 - Alertas operativas: guías sin estado y guías paradas más de 5 días.
 - El indicador del tablero coincide con SQL, y esa validación quedó como parte del proceso.
 - Las reexpediciones se ven por separado, así que su demora ya no se confunde con la de los envíos directos.
 
 ## Qué haría distinto
 
-- **Orquestar con una herramienta y no solo con tareas programadas.** Con siete fuentes y dependencias entre etapas, algo como Airflow daría reintentos, alertas y un historial de ejecuciones sin código propio.
-- **Pruebas de calidad declarativas.** Las validaciones de la sección anterior estarían mejor como pruebas versionadas (por ejemplo, con dbt o Great Expectations) que fallen la carga cuando algo no cuadra.
-- **Cargas incrementales.** Consultar solo las guías que cambiaron desde la última ejecución reduciría las llamadas a las APIs.
-- **Probar en la nube.** Es el siguiente paso natural de lo que estoy aprendiendo: dejar el crudo en S3 en Parquet y consultarlo con Athena.
+- **Orquestar con una herramienta y no solo con tareas programadas.** Con siete fuentes y dependencias entre etapas, algo como Airflow daría reintentos por tarea, alertas y un historial de ejecuciones sin código propio.
+- **Pruebas de calidad declarativas.** Las validaciones de la sección anterior estarían mejor como pruebas versionadas (por ejemplo, con dbt o Great Expectations) que detengan la carga cuando algo no cuadra.
+- **Datos que llegan tarde.** La marca de agua solo mira hacia adelante; una ventana de relectura de los últimos días cubriría las guías que una API publica con retraso.
+- **Probar en la nube.** Es el siguiente paso natural de lo que estoy aprendiendo: dejar la capa raw en S3 en Parquet y consultarla con Athena.
 
 ## Pruébalo: SQL sobre el dataset sintético
 
