@@ -8,5 +8,5 @@
     "jsxImportSource": "vue"
   },
   "include": [".astro/types.d.ts", "**/*"],
-  "exclude": ["dist", "node_modules", ".venv", "scripts", "public"]
+  "exclude": ["dist", "node_modules", ".venv", "scripts", "public", "tableros"]
 }
