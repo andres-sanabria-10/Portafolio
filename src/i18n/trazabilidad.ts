@@ -34,16 +34,16 @@ export interface TraceabilityContent {
   stages: TraceStage[];
 }
 
-// TODO(Andrés): confirmar cuántas transportadoras usan REST y cuántas SOAP. Las
-// letras son genéricas, así que basta con que la proporción sea la real.
+// Proporción real del pipeline: 6 APIs REST (JSON) y 1 servicio web SOAP (XML).
+// Las letras son genéricas y no corresponden a ninguna transportadora real.
 const carriers: { name: string; protocol: Protocol }[] = [
   { name: 'Transportadora A', protocol: 'REST' },
-  { name: 'Transportadora B', protocol: 'SOAP' },
+  { name: 'Transportadora B', protocol: 'REST' },
   { name: 'Transportadora C', protocol: 'REST' },
   { name: 'Transportadora D', protocol: 'SOAP' },
   { name: 'Transportadora E', protocol: 'REST' },
   { name: 'Transportadora F', protocol: 'REST' },
-  { name: 'Transportadora G', protocol: 'SOAP' },
+  { name: 'Transportadora G', protocol: 'REST' },
 ];
 
 const es: TraceabilityContent = {
@@ -86,25 +86,38 @@ const es: TraceabilityContent = {
       title: 'APIs de transportadoras',
       subtitle: 'Siete integraciones distintas',
       inputs:
-        'Los eventos que reporta cada transportadora para cada guía (recogida, en tránsito, novedad, entrega…), con su fecha y hora.',
+        'Las guías, los eventos de seguimiento (recogida, tránsito, entrega) con su fecha y hora, y datos como peso, cajas y flete.',
       transform:
-        'Cada transportadora expone su propia API: unas REST con JSON y otras SOAP con XML. Cada una se consulta con un adaptador propio que entrega el mismo formato de salida.',
+        'Cada transportadora expone su propia API: seis REST con JSON y una SOAP con XML, con autenticación distinta (token, llave en parámetros, login con JWT). Cada una tiene un adaptador propio que entrega el mismo formato de salida, y todas comparten un cliente HTTP con reintentos.',
       problem:
-        'Siete integraciones con formatos, autenticación y nombres de estado diferentes. Sin adaptadores, cada transportadora nueva habría sido un caso especial en todo el pipeline.',
-      tech: ['APIs REST (JSON)', 'Servicios SOAP (XML)'],
+        'Siete integraciones con formatos, límites y nombres de estado diferentes. El cliente HTTP reintenta con espera exponencial ante cortes y límites de peticiones (429, respetando Retry-After) y renueva el token una vez si vence (401/403), así un fallo pasajero no tumba la corrida.',
+      tech: ['APIs REST (JSON)', 'SOAP (XML)', 'requests'],
       carriers,
     },
     {
       id: 'ingesta',
       lane: 'pipeline',
-      title: 'Ingesta en Python',
-      subtitle: 'Del API a staging',
-      inputs: 'Las guías despachadas que todavía no tienen un estado final.',
+      title: 'Ingesta incremental (raw)',
+      subtitle: 'Solo lo nuevo, guardado tal cual',
+      inputs:
+        'Las guías creadas desde la última carga y las guías que todavía no tienen estado final.',
       transform:
-        'Un proceso en Python consulta las APIs por lotes y guarda la respuesta cruda en tablas de staging, sin transformarla todavía.',
+        'Cada corrida parte de la última fecha cargada (marca de agua) y pide a las APIs solo lo nuevo, en ventanas de fechas contiguas. La respuesta se guarda cruda, con la fecha de carga, antes de cualquier transformación.',
       problem:
-        'Guardar el dato crudo permite reprocesar cuando cambia una regla de negocio, sin volver a llamar a las APIs de las transportadoras.',
-      tech: ['Python', 'pandas', 'staging en SQL Server'],
+        'Una de las APIs tomaba la fecha final del rango como exclusiva: al paginar con un día de más se perdía 1 de cada 3 días. Lo detecté validando cuántas guías quedaban sin flete y lo corregí con ventanas contiguas. Guardar el crudo permite reprocesar sin volver a llamar a las APIs.',
+      tech: ['Python', 'Carga incremental', 'Capa raw'],
+    },
+    {
+      id: 'staging',
+      lane: 'pipeline',
+      title: 'Staging: limpieza y tipos',
+      subtitle: 'Las reglas de limpieza en un solo lugar',
+      inputs: 'La respuesta cruda de cada transportadora.',
+      transform:
+        'Se parsean las fechas de cada formato, se limpian las llaves (TRIM y puntuación sobrante), se normalizan las ciudades (mayúsculas, sin tildes) y se usan NULL en lugar de valores de relleno. Las cargas son idempotentes: volver a correr no duplica guías ni eventos, y un campo vacío en la API no borra uno que ya existía.',
+      problem:
+        'Algunos NIT llegaban con el dígito de verificación pegado y no cabían en la columna entera: se separan en staging. Tener la limpieza aquí, y no repartida entre scripts y el tablero, hace que cada regla exista una sola vez.',
+      tech: ['Python', 'SQL Server', 'Cargas idempotentes'],
     },
     {
       id: 'normalizacion',
@@ -113,34 +126,33 @@ const es: TraceabilityContent = {
       subtitle: 'Un modelo común',
       inputs: 'Los estados crudos de cada transportadora, cada una con su propio vocabulario.',
       transform:
-        'Un mapeo por transportadora traduce cada estado a un modelo común (despachado, en tránsito, novedad, entregado, devuelto). Un estado sin mapeo no se descarta en silencio: se reporta para revisarlo.',
+        'Una tabla de mapeo versionada (transportadora, estado de origen, estado común) traduce cada estado a un modelo común: recogida, en tránsito y entregado. Un estado que no está en la tabla se reporta para revisarlo, no pasa en silencio.',
       problem:
-        'Sin un modelo común no se podía comparar una transportadora con otra ni medir la entrega a tiempo con la misma regla para todas.',
-      tech: ['Python', 'pandas'],
+        'Cada transportadora llama distinto a lo mismo (una dice "ENTREGADO", otra "Entrega", otra "ENTREGA VERIFICADA"). Sin un modelo común no se podía comparar una con otra ni medir la entrega a tiempo con la misma regla.',
+      tech: ['SQL', 'Tabla de mapeo'],
     },
     {
       id: 'reexpediciones',
       lane: 'pipeline',
-      title: 'Detección de reexpediciones',
-      subtitle: 'Destinos con segunda transportadora',
-      inputs: 'Las guías normalizadas, con su destino y su transportadora.',
+      title: 'Reexpediciones y fecha prometida',
+      subtitle: 'Reglas de negocio centralizadas',
+      inputs: 'Las guías limpias, con su destino y la fecha de su primer estado.',
       transform:
-        'Se marcan los envíos cuyo destino requiere una segunda transportadora para llegar.',
+        'Una tabla de referencia marca los destinos que requieren una segunda transportadora y su tiempo adicional. La fecha prometida se calcula igual para todas: primer estado más 2 días a ciudades principales o 3 al resto.',
       problem:
-        'Una reexpedición tarda más por naturaleza. Marcarla permite analizarla aparte en lugar de mezclarla con los envíos directos.',
-      tech: ['Python', 'SQL'],
+        'Cada transportadora prometía con su propio criterio, así que el cumplimiento no era comparable. Una sola regla de fecha prometida y una referencia de reexpediciones permiten medir a todas por igual y analizar aparte los envíos que tardan más por naturaleza.',
+      tech: ['Python', 'SQL', 'Tablas de referencia'],
     },
     {
       id: 'fact',
       lane: 'consumo',
       title: 'fact_envios en SQL Server',
       subtitle: 'Una fila por guía',
-      inputs:
-        'Cada guía con las fechas de todas sus etapas, la transportadora, la ruta, el estado final, la marca de reexpedición, el valor de venta, el flete y el peso.',
+      inputs: 'Las guías y los eventos ya limpios y con estado común.',
       transform:
-        'Se carga la tabla de hechos fact_envios, relacionada con dimensiones como dim_transportadora y dim_ciudad.',
+        'fact_eventos_guia guarda una fila por evento. fact_envios guarda una fila por guía con su último estado (una sola regla, determinista) y la fecha de cada etapa ya calculada, relacionada con dim_transportadora y dim_ciudad.',
       problem:
-        'Tener una sola fuente de verdad, con una fila por guía, contra la que se valida cualquier indicador.',
+        'Tener una sola fuente de verdad, con una fila por guía, contra la que se valida cualquier indicador. Con las fechas de etapa en la tabla, las métricas no se recalculan en cada consulta del tablero.',
       tech: ['SQL Server', 'Modelo estrella'],
     },
     {
@@ -150,9 +162,9 @@ const es: TraceabilityContent = {
       subtitle: 'Comparar en igualdad de condiciones',
       inputs: 'fact_envios.',
       transform:
-        'Consultas con CTEs y window functions calculan el tiempo de cada etapa por ruta (origen–destino) y transportadora, la entrega a tiempo (OTD) con su ranking y el porcentaje que representa el flete frente al valor de venta de cada guía.',
+        'Consultas con CTEs y window functions calculan el tiempo de cada etapa por ruta (origen–destino) y transportadora, la entrega a tiempo (OTD) con su ranking, y el flete frente a la venta, prorrateando el flete cuando una guía lleva varias facturas.',
       problem:
-        'Comparar transportadoras solo entre las que atienden la misma ruta, ubicar dónde se demora el envío y ver, guía por guía, si el flete supera la meta del 1 % de la venta.',
+        'Comparar transportadoras solo entre las que atienden la misma ruta, ubicar dónde se demora el envío y ver si el flete supera la meta del 1 % de la venta. Cada métrica tiene una definición escrita, para que todos midan lo mismo.',
       tech: ['T-SQL', 'CTEs', 'Window functions'],
     },
     {
