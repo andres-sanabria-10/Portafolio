@@ -214,80 +214,88 @@
     color: var(--muted);
   }
 
-  /* Texto largo de casos de estudio, notas y artículos (Markdown / MDX). */
+  /*
+   * Texto largo de casos de estudio, notas y artículos (Markdown / MDX).
+   * El texto se limita a ~44rem, pero las islas interactivas (astro-island) y lo
+   * marcado con .wide usan todo el ancho del contenedor. Nada de lo que esté
+   * dentro de .not-prose hereda estos estilos.
+   */
   .prose {
-    max-width: var(--container-prose);
     font-size: 1.0625rem;
     line-height: 1.75;
+  }
+
+  .prose > :not(astro-island, .wide) {
+    max-width: var(--container-prose);
   }
 
   .prose > * + * {
     margin-top: 1.25em;
   }
 
-  .prose h2 {
+  .prose h2:not(:where(.not-prose, .not-prose *)) {
     margin-top: 2.25em;
     font-size: 1.5rem;
     font-weight: 650;
   }
 
-  .prose h3 {
+  .prose h3:not(:where(.not-prose, .not-prose *)) {
     margin-top: 1.75em;
     font-size: 1.1875rem;
     font-weight: 650;
   }
 
-  .prose a {
+  .prose a:not(:where(.not-prose, .not-prose *)) {
     color: var(--accent);
     text-decoration: underline;
     text-decoration-thickness: 1px;
     text-underline-offset: 0.2em;
   }
 
-  .prose a:hover {
+  .prose a:hover:not(:where(.not-prose, .not-prose *)) {
     color: var(--accent-strong);
   }
 
-  .prose ul,
-  .prose ol {
+  .prose ul:not(:where(.not-prose, .not-prose *)),
+  .prose ol:not(:where(.not-prose, .not-prose *)) {
     padding-left: 1.4em;
   }
 
-  .prose ul {
+  .prose ul:not(:where(.not-prose, .not-prose *)) {
     list-style: disc;
   }
 
-  .prose ol {
+  .prose ol:not(:where(.not-prose, .not-prose *)) {
     list-style: decimal;
   }
 
-  .prose li + li {
+  .prose li + li:not(:where(.not-prose, .not-prose *)) {
     margin-top: 0.4em;
   }
 
-  .prose li::marker {
+  .prose li:not(:where(.not-prose, .not-prose *))::marker {
     color: var(--muted);
   }
 
-  .prose blockquote {
+  .prose blockquote:not(:where(.not-prose, .not-prose *)) {
     padding-left: 1em;
     border-left: 2px solid var(--accent);
     color: var(--muted);
   }
 
-  .prose code {
+  .prose code:not(:where(.not-prose, .not-prose *)) {
     font-family: var(--font-mono);
     font-size: 0.875em;
   }
 
-  .prose :not(pre) > code {
+  .prose :not(pre) > code:not(:where(.not-prose, .not-prose *)) {
     padding: 0.15em 0.35em;
     border: 1px solid var(--line);
     border-radius: 0.25rem;
     background-color: var(--surface-raised);
   }
 
-  .prose pre {
+  .prose pre:not(:where(.not-prose, .not-prose *)) {
     padding: 1rem 1.125rem;
     overflow-x: auto;
     border: 1px solid var(--line);
@@ -311,7 +319,7 @@
     color: var(--shiki-light);
   }
 
-  .prose table {
+  .prose table:not(:where(.not-prose, .not-prose *)) {
     display: block;
     width: 100%;
     overflow-x: auto;
@@ -319,25 +327,25 @@
     font-size: 0.9375rem;
   }
 
-  .prose th,
-  .prose td {
+  .prose th:not(:where(.not-prose, .not-prose *)),
+  .prose td:not(:where(.not-prose, .not-prose *)) {
     padding: 0.5rem 0.75rem;
     border-bottom: 1px solid var(--line);
     text-align: left;
   }
 
-  .prose th {
+  .prose th:not(:where(.not-prose, .not-prose *)) {
     font-family: var(--font-mono);
     font-size: 0.8125rem;
     font-weight: 500;
     color: var(--muted);
   }
 
-  .prose img {
+  .prose img:not(:where(.not-prose, .not-prose *)) {
     border-radius: var(--radius-ui);
   }
 
-  .prose hr {
+  .prose hr:not(:where(.not-prose, .not-prose *)) {
     border-color: var(--line);
     margin-block: 2.5em;
   }
