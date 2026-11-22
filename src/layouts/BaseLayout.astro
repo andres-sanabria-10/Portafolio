@@ -50,29 +50,30 @@ const hreflangs = alternates
 ---
 
 <!doctype html>
-<html lang={localeMeta[lang].htmlLang} data-theme="dark">
+<html lang={localeMeta[lang].htmlLang} data-theme="light">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="color-scheme" content="dark light" />
-    <meta name="theme-color" content="#0b1117" />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="theme-color" content="#f6f8fa" />
 
     <!--
       Evita el parpadeo de tema: se ejecuta antes del primer pintado y aplica la
-      preferencia guardada. Oscuro es el valor por defecto; el claro es opcional.
+      preferencia guardada. Claro es el valor por defecto para todos (no sigue
+      al sistema); el oscuro es opcional con el botón y se recuerda.
     -->
     <script is:inline>
       (function () {
-        var theme = 'dark';
+        var theme = 'light';
         try {
-          if (localStorage.getItem('theme') === 'light') theme = 'light';
+          if (localStorage.getItem('theme') === 'dark') theme = 'dark';
         } catch (error) {
-          /* Almacenamiento bloqueado: se queda en oscuro. */
+          /* Almacenamiento bloqueado: se queda en claro. */
         }
         document.documentElement.dataset.theme = theme;
-        if (theme === 'light') {
+        if (theme === 'dark') {
           var meta = document.querySelector('meta[name="theme-color"]');
-          if (meta) meta.setAttribute('content', '#f6f8fa');
+          if (meta) meta.setAttribute('content', '#0b1117');
         }
       })();
     </script>

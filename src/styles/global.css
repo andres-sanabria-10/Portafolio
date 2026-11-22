@@ -6,9 +6,10 @@
 /*
  * Tokens de diseño
  * ----------------
- * Un solo acento (verde agua) sobre neutros fríos. El tema oscuro es el valor
- * por defecto de :root, así que la página se ve bien aunque no corra el script
- * de tema. Contrastes comprobados contra WCAG AA (texto normal >= 4.5:1).
+ * Un solo acento (verde agua) sobre neutros fríos. El sitio abre en claro: el
+ * HTML trae data-theme="light" y el script de BaseLayout solo cambia a oscuro
+ * si el visitante lo eligió antes. :root guarda los valores del oscuro como
+ * base. Contrastes comprobados contra WCAG AA (texto normal >= 4.5:1).
  *
  *   Oscuro  texto/fondo 16.1:1 · atenuado/fondo 8.8:1 · acento/fondo 10.2:1 · texto sobre acento 9.1:1
  *   Claro   texto/fondo 16.7:1 · atenuado/fondo 7.0:1 · acento/fondo 5.1:1 · texto sobre acento 5.4:1
