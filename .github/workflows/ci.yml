@@ -1,0 +1,48 @@
+name: CI
+
+# En cada pull request: tipos, pruebas, build y Lighthouse CI con un mínimo de
+# 0.95 en rendimiento, accesibilidad, buenas prácticas y SEO (lighthouserc.json).
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  ci:
+    name: Check, test, build y Lighthouse
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Instalar dependencias
+        run: npm ci
+
+      - name: Comprobar tipos (astro check)
+        run: npm run check
+
+      - name: Pruebas (Vitest)
+        run: npm test
+
+      - name: Build
+        run: npm run build
+
+      - name: Lighthouse CI
+        run: npx --yes @lhci/cli@0.16.x autorun
+
+      - name: Guardar informes de Lighthouse
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: lighthouse-reports
+          path: .lighthouseci/
+          if-no-files-found: ignore
