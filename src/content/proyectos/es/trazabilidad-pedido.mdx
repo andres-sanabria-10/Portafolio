@@ -76,9 +76,9 @@ Las preguntas de negocio eran tres: **¿dónde se demora el envío?**, **¿qué 
 
 Todo corre on-premise, sobre la infraestructura de la empresa: un script en Python que el Programador de tareas de Windows ejecuta cada 4 horas en un servidor propio y carga en SQL Server, sin costos de nube. El pipeline toma los datos del ERP y de las APIs de 7 transportadoras y los lleva por capas, de lo crudo a lo listo para medir:
 
-- **Raw:** la respuesta de cada API tal como llegó, con la fecha de carga. Permite reprocesar sin volver a llamar a las APIs.
-- **Staging:** el dato limpio y tipado: llaves sin espacios, ciudades normalizadas, fechas parseadas y `NULL` en lugar de valores de relleno.
-- **Modelo:** `fact_eventos_guia` (una fila por evento) y `fact_envios` (una fila por guía, con su último estado y la fecha de cada etapa), con sus dimensiones.
+- **Raw:** de cada respuesta se guardan solo los campos que el negocio usa, con su valor tal como llega (sin limpiar) y la fecha de carga. Lo que la API no trae queda en `NULL`.
+- **Staging:** vistas en SQL Server sobre raw con todas las reglas de limpieza: llaves sin espacios, ciudades normalizadas, NIT separado de su dígito de verificación, documentos de relleno excluidos y el cruce con la tabla de mapeo de estados. No duplican datos.
+- **Modelo:** vistas `fact_eventos_guia` (una fila por evento) y `fact_envios` (una fila por guía, con su último estado y la fecha de cada etapa), con sus dimensiones. Power BI importa de aquí.
 - **Consumo:** las métricas de tiempos, OTD y flete, que Power BI presenta.
 
 Haz clic en cada etapa (o recórrelas con el teclado) para ver qué datos entran, qué transformación se aplica y qué problema resolví en ella.
@@ -87,7 +87,7 @@ Haz clic en cada etapa (o recórrelas con el teclado) para ver qué datos entran
 
 ## Decisiones técnicas
 
-**1. Capas raw, staging y modelo.** El crudo se guarda tal como llegó; la limpieza vive en staging y el modelo se construye después. Si cambia una regla (por ejemplo, cómo se mapea un estado), se reprocesa desde raw sin volver a consultar las APIs, y cada regla de limpieza existe en un solo lugar. *Descarté* limpiar en el tablero: las reglas terminan repartidas entre scripts, Power Query y DAX.
+**1. Capas raw, staging y modelo.** Raw guarda los campos necesarios con su valor original; la limpieza vive en vistas de staging y el modelo se construye encima. Como raw conserva el valor tal como llegó, cambiar una regla (por ejemplo, cómo se mapea un estado) es cambiar una vista: todo se recalcula sin volver a llamar a las APIs, y cada regla existe en un solo lugar. *Descarté* guardar el JSON completo de cada respuesta: la mayoría de los campos no se usan; el costo es que un campo nuevo exige volver a consultar la API. También descarté limpiar en el tablero: las reglas terminan repartidas entre scripts, Power Query y DAX.
 
 **2. Un adaptador por transportadora y un cliente HTTP compartido.** Seis transportadoras responden REST con JSON y una SOAP con XML, cada una con su autenticación (token, llave en parámetros o login con JWT) y sus límites. Cada integración es un adaptador pequeño que entrega siempre el mismo formato, y todas usan el mismo cliente HTTP, que reintenta con espera exponencial ante cortes de red y respuestas 429 (respetando `Retry-After`) y renueva el token una vez si vence. Agregar una transportadora es escribir un adaptador, no tocar el resto del pipeline.
 
@@ -160,11 +160,11 @@ def normalizar_estados(
     return unido.dropna(subset=["estado_comun"]), sin_mapear
 ```
 
-**Carga idempotente.** Correr dos veces la misma carga deja la tabla igual, y un campo vacío en la API no borra el que ya existía.
+**Carga idempotente a raw.** Correr dos veces la misma carga deja la tabla igual, y un campo vacío en la API no borra el que ya existía.
 
 ```sql
-MERGE fact_envios AS destino
-USING stg_guias AS origen
+MERGE raw.guias AS destino
+USING #lote_api AS origen          -- lo que trajo la API en esta corrida
     ON destino.guia = origen.guia
 WHEN MATCHED THEN UPDATE SET
     -- COALESCE: si la API devolvió el campo vacío, se conserva el valor anterior.

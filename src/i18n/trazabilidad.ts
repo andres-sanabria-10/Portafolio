@@ -102,9 +102,9 @@ const es: TraceabilityContent = {
       inputs:
         'Las guías creadas desde la última carga y las guías que todavía no tienen estado final.',
       transform:
-        'Cada corrida parte de la última fecha cargada (marca de agua) y pide a las APIs solo lo nuevo, en ventanas de fechas contiguas. La respuesta se guarda cruda, con la fecha de carga, antes de cualquier transformación.',
+        'Cada corrida parte de la última fecha cargada (marca de agua) y pide a las APIs solo lo nuevo, en ventanas de fechas contiguas. De cada respuesta se guardan solo los campos necesarios, con su valor tal como llega y la fecha de carga; lo que la API no trae queda en NULL.',
       problem:
-        'Una de las APIs tomaba la fecha final del rango como exclusiva: al paginar con un día de más se perdía 1 de cada 3 días. Lo detecté validando cuántas guías quedaban sin flete y lo corregí con ventanas contiguas. Guardar el crudo permite reprocesar sin volver a llamar a las APIs.',
+        'Una de las APIs tomaba la fecha final del rango como exclusiva: al paginar con un día de más se perdía 1 de cada 3 días. Lo detecté validando cuántas guías quedaban sin flete y lo corregí con ventanas contiguas. Como raw conserva el valor original, cambiar una regla de limpieza no exige volver a llamar a las APIs.',
       tech: ['Python', 'Programador de tareas (cada 4 h)', 'Capa raw'],
     },
     {
@@ -112,9 +112,9 @@ const es: TraceabilityContent = {
       lane: 'pipeline',
       title: 'Staging: limpieza y tipos',
       subtitle: 'Las reglas de limpieza en un solo lugar',
-      inputs: 'La respuesta cruda de cada transportadora.',
+      inputs: 'Las tablas raw, con los valores tal como llegaron de cada transportadora.',
       transform:
-        'Se parsean las fechas de cada formato, se limpian las llaves (TRIM y puntuación sobrante), se normalizan las ciudades (mayúsculas, sin tildes) y se usan NULL en lugar de valores de relleno. Las cargas son idempotentes: volver a correr no duplica guías ni eventos, y un campo vacío en la API no borra uno que ya existía.',
+        'Vistas en SQL Server limpian las llaves (TRIM y puntuación sobrante), normalizan las ciudades (mayúsculas, sin tildes), separan el NIT de su dígito de verificación y excluyen los documentos de relleno. Son vistas: no duplican datos y cada regla vive en un solo lugar. Las cargas a raw son idempotentes: volver a correr no duplica guías ni eventos, y un campo vacío en la API no borra uno que ya existía.',
       problem:
         'Algunos NIT llegaban con el dígito de verificación pegado y no cabían en la columna entera: se separan en staging. Tener la limpieza aquí, y no repartida entre scripts y el tablero, hace que cada regla exista una sola vez.',
       tech: ['Python', 'SQL Server', 'Cargas idempotentes'],
