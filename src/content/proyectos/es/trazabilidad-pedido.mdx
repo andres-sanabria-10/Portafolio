@@ -30,8 +30,6 @@ linkedin_post: |
 ---
 
 import TraceabilityDiagram from '../../../components/TraceabilityDiagram.astro';
-import PlaygroundSection from '../../../components/PlaygroundSection.astro';
-import TraceabilityDashboardSection from '../../../components/TraceabilityDashboardSection.astro';
 import resumen from '../../../../public/data/envios_resumen.json';
 
 export const n = (value) => value.toLocaleString('es-CO');
@@ -234,7 +232,7 @@ Otros tres errores reales que encontré validando el dato y que hoy el pipeline 
 - **NIT con el dígito de verificación pegado.** Algunos NIT llegaban como un solo número de 10 dígitos y no cabían en la columna entera. Staging separa el dígito de verificación antes de cargar.
 - **Una actualización que borraba datos.** Si la API devolvía vacío un campo que la guía ya tenía, la actualización lo dejaba en `NULL`. Ahora la carga usa `COALESCE` y conserva el valor anterior.
 
-**El mismo error, reproducido con datos sintéticos.** Para poder mostrarlo sin exponer datos reales, el dataset sintético de este sitio trae los dos problemas sembrados a propósito: {n(calidad.guias_duplicadas)} guías repetidas por tener varios estados y {n(calidad.filas_con_espacios)} filas con espacios al inicio de la llave (por eso `COUNT(DISTINCT guia)` da {n(calidad.guias_distintas_sin_limpiar)} en lugar de {n(meta.guias_unicas)}). Con esos datos, la {peor.transportadora} pasa de un OTD de {n(peor.otd_pct)} % a {n(peor.otd_ingenuo_pct)} % si se cuentan filas en lugar de guías: {n(Math.abs(peor.diferencia_pp))} puntos menos. *Cifras 100 % sintéticas: no son datos de ninguna empresa.* Puedes comprobarlo tú con la consulta "El error de contar filas en vez de guías" del playground al final de esta página.
+**El mismo error, reproducido con datos sintéticos.** Para poder mostrarlo sin exponer datos reales, el dataset sintético de este sitio trae los dos problemas sembrados a propósito: {n(calidad.guias_duplicadas)} guías repetidas por tener varios estados y {n(calidad.filas_con_espacios)} filas con espacios al inicio de la llave (por eso `COUNT(DISTINCT guia)` da {n(calidad.guias_distintas_sin_limpiar)} en lugar de {n(meta.guias_unicas)}). Con esos datos, la {peor.transportadora} pasa de un OTD de {n(peor.otd_pct)} % a {n(peor.otd_ingenuo_pct)} % si se cuentan filas en lugar de guías: {n(Math.abs(peor.diferencia_pp))} puntos menos. *Cifras 100 % sintéticas: no son datos de ninguna empresa.* Puedes comprobarlo tú con la consulta "El error de contar filas en vez de guías" en el [playground de SQL](/playground/).
 
 Además, el pipeline revisa en cada carga:
 
@@ -297,12 +295,6 @@ SELECT
 FROM prorrateo;
 ```
 
-### El tablero, reproducido con datos sintéticos
-
-Las dos vistas que más uso: la matriz de tiempos por ruta y transportadora, que resalta la más rápida de cada ruta, y el semáforo de flete vs venta. *Todas las cifras son sintéticas: no son datos de ninguna empresa.*
-
-<TraceabilityDashboardSection lang="es" />
-
 ## Resultados
 
 {/* TODO: métrica real aproximada — cuántos pedidos o guías al mes cubre el pipeline. */}
@@ -323,9 +315,3 @@ Las dos vistas que más uso: la matriz de tiempos por ruta y transportadora, que
 - **Pruebas de calidad declarativas.** Las validaciones de la sección anterior estarían mejor como pruebas versionadas (por ejemplo, con dbt o Great Expectations) que detengan la carga cuando algo no cuadra.
 - **Datos que llegan tarde.** La marca de agua solo mira hacia adelante; una ventana de relectura de los últimos días cubriría las guías que una API publica con retraso.
 - **Probar en la nube.** Es el siguiente paso natural de lo que estoy aprendiendo: dejar la capa raw en S3 en Parquet y consultarla con Athena.
-
-## Pruébalo: SQL sobre el dataset sintético
-
-El playground corre DuckDB completo en tu navegador sobre {n(meta.filas)} filas sintéticas de envíos ({n(meta.guias_unicas)} guías). Elige una consulta de ejemplo o escribe la tuya sobre la vista `envios`.
-
-<PlaygroundSection lang="es" />

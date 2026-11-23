@@ -144,36 +144,6 @@ const es = {
   'trace.prev': 'Etapa anterior',
   'trace.next': 'Etapa siguiente',
 
-  'dash.tablist': 'Vistas del tablero de trazabilidad',
-  'dash.tabRoutes': 'Tiempo por ruta',
-  'dash.tabFreight': 'Flete vs venta',
-  'dash.badge': 'Datos 100 % sintéticos',
-  'dash.routesIntro':
-    'Días promedio de despacho a entrega en las 10 rutas con más envíos que atienden dos o más transportadoras. Cada fila compara solo a quienes van al mismo lugar.',
-  'dash.routesCaption': 'Días promedio de despacho a entrega por ruta y transportadora',
-  'dash.route': 'Ruta',
-  'dash.deliveries': 'entregas',
-  'dash.fastest': 'La más rápida de la ruta',
-  'dash.noData': 'Sin entregas suficientes en esta ruta',
-  'dash.days': 'Cifras en días.',
-  'dash.routesNote': '— : menos de 20 entregas en la ruta.',
-  'dash.freightIntro':
-    'El {pct} % de las guías despachadas supera la meta: su flete cuesta más del {meta} % de la venta que transportan. En total, esas guías se pasan de la meta en {total}.',
-  'dash.freightCaption': 'Semáforo de flete vs venta por transportadora',
-  'dash.carrier': 'Transportadora',
-  'dash.shipments': 'Guías',
-  'dash.red': 'Guías en rojo (flete > 1 % de la venta)',
-  'dash.green': 'Guías en verde (flete ≤ 1 %)',
-  'dash.freightOverSale': 'Flete / venta',
-  'dash.overTarget': 'Sobre la meta',
-  'dash.costCaption': 'Costo del flete por kg según destino',
-  'dash.destination': 'Destino',
-  'dash.destination.principal': 'Ciudades principales',
-  'dash.destination.intermedia': 'Ciudades intermedias',
-  'dash.destination.apartada': 'Destinos apartados',
-  'dash.freightNote':
-    'Las guías en rojo se concentran en facturas pequeñas (por el flete mínimo) y en destinos apartados (por la tarifa): ahí es donde conviene consolidar despachos o renegociar.',
-
   'playground.title': 'SQL en el navegador',
   'playground.description':
     'Consulta con SQL un dataset sintético de 20.000 envíos usando DuckDB, que corre completo en tu navegador. Las consultas de ejemplo usan CTEs y window functions.',
@@ -355,36 +325,6 @@ const en: Record<UiKey, string> = {
   'trace.close': 'Close details',
   'trace.prev': 'Previous stage',
   'trace.next': 'Next stage',
-
-  'dash.tablist': 'Traceability dashboard views',
-  'dash.tabRoutes': 'Time by route',
-  'dash.tabFreight': 'Freight vs sale',
-  'dash.badge': '100% synthetic data',
-  'dash.routesIntro':
-    'Average days from dispatch to delivery on the 10 busiest routes served by two or more carriers. Each row only compares carriers going to the same place.',
-  'dash.routesCaption': 'Average days from dispatch to delivery by route and carrier',
-  'dash.route': 'Route',
-  'dash.deliveries': 'deliveries',
-  'dash.fastest': 'Fastest on the route',
-  'dash.noData': 'Not enough deliveries on this route',
-  'dash.days': 'Figures in days.',
-  'dash.routesNote': '— : fewer than 20 deliveries on the route.',
-  'dash.freightIntro':
-    '{pct}% of dispatched shipments miss the target: their freight costs more than {meta}% of the sale they carry. Together, those shipments exceed the target by {total}.',
-  'dash.freightCaption': 'Freight vs sale traffic light by carrier',
-  'dash.carrier': 'Carrier',
-  'dash.shipments': 'Shipments',
-  'dash.red': 'Red shipments (freight > 1% of sale)',
-  'dash.green': 'Green shipments (freight ≤ 1%)',
-  'dash.freightOverSale': 'Freight / sale',
-  'dash.overTarget': 'Over target',
-  'dash.costCaption': 'Freight cost per kg by destination',
-  'dash.destination': 'Destination',
-  'dash.destination.principal': 'Major cities',
-  'dash.destination.intermedia': 'Mid-size cities',
-  'dash.destination.apartada': 'Remote destinations',
-  'dash.freightNote':
-    'Red shipments cluster in small invoices (because of the minimum freight) and remote destinations (because of the rate): that is where consolidating dispatches or renegotiating pays off.',
 
   'playground.title': 'SQL in the browser',
   'playground.description':

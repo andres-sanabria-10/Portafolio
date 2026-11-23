@@ -28,9 +28,6 @@
   --accent-strong: #5eead4;
   --accent-soft: rgb(45 212 191 / 0.12);
   --on-accent: #04211d;
-  /* Rojo de alertas (semáforo): 6.8:1 sobre el fondo oscuro. */
-  --danger: #f97066;
-  --danger-soft: rgb(249 112 102 / 0.14);
 }
 
 :root[data-theme='light'] {
@@ -46,9 +43,6 @@
   --accent-strong: #115e59;
   --accent-soft: rgb(15 118 110 / 0.1);
   --on-accent: #f6fffd;
-  /* Rojo de alertas (semáforo): 6.2:1 sobre el fondo claro. */
-  --danger: #b42318;
-  --danger-soft: rgb(180 35 24 / 0.1);
 }
 
 @theme inline {
@@ -63,8 +57,6 @@
   --color-accent-strong: var(--accent-strong);
   --color-accent-soft: var(--accent-soft);
   --color-on-accent: var(--on-accent);
-  --color-danger: var(--danger);
-  --color-danger-soft: var(--danger-soft);
 
   --font-sans: 'Inter Variable', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
   --font-mono: 'JetBrains Mono Variable', ui-monospace, 'Cascadia Code', Consolas, monospace;
