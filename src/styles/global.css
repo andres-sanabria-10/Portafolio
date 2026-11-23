@@ -220,6 +220,40 @@
    * marcado con .wide usan todo el ancho del contenedor. Nada de lo que esté
    * dentro de .not-prose hereda estos estilos.
    */
+  /* Resumen al inicio de un caso: problema, solución, stack e impacto de un vistazo. */
+  .case-summary {
+    display: grid;
+    gap: 1rem;
+    padding: 1.25rem 1.375rem;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-ui);
+    background-color: var(--surface);
+  }
+
+  .case-summary dt {
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    color: var(--muted);
+  }
+
+  .case-summary dd {
+    margin-top: 0.125rem;
+    font-size: 1rem;
+    line-height: 1.6;
+  }
+
+  @media (min-width: 48rem) {
+    .case-summary > div {
+      display: grid;
+      grid-template-columns: 6.5rem 1fr;
+      gap: 1rem;
+    }
+
+    .case-summary dt {
+      padding-top: 0.2rem;
+    }
+  }
+
   .prose {
     font-size: 1.0625rem;
     line-height: 1.75;

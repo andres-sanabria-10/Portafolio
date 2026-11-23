@@ -1,5 +1,5 @@
 ---
-title: Trazabilidad de punta a punta del pedido
+title: Trazabilidad de punta a punta del envío
 summary: Pipeline en Python que integra las APIs de 7 transportadoras (REST y SOAP) con carga incremental y capas raw, staging y modelo en SQL Server, normaliza sus estados a un modelo común y mide tiempos por ruta, entrega a tiempo (OTD) y flete frente a la venta.
 # TODO(Andrés): fecha real del proyecto (también define el orden en los listados).
 date: 2026-06-01
@@ -12,19 +12,19 @@ featured: true
 # Borrador hasta completar los TODO de "Resultados": se ve en `npm run dev`, no en producción.
 draft: true
 linkedin_post: |
-  Un indicador de Power BI me decía que una transportadora entregaba a tiempo unos 6 puntos menos de lo real.
+  Un indicador de Power BI me decía que una transportadora cumplía menos de lo que cumplía de verdad.
 
-  El tablero no estaba "mal hecho". El problema era más silencioso: una relación del modelo contaba cada guía una vez por cada estado que tenía. Una guía con tres estados pesaba tres veces, y justo las guías con novedades son las que más estados acumulan.
+  El tablero no estaba "mal hecho". El problema era más silencioso: una relación del modelo contaba cada guía una vez por cada estado que tenía. Una guía con tres estados pesaba tres veces, y como cada transportadora reporta un número distinto de estados, el error no pesaba igual para todas.
 
   Lo encontré por una costumbre que hoy no negocio: validar cada indicador del BI contra una consulta en SQL.
 
-  Tres ideas que me dejó este proyecto de trazabilidad (7 transportadoras, unas por REST y otras por SOAP):
+  Tres ideas que me dejó este proyecto (7 transportadoras, unas por REST y otra por SOAP):
 
   1. Define el grano antes de medir. "Una fila por guía" parece obvio hasta que no lo es.
   2. Limpia las llaves en la entrada. Un espacio al inicio de un número de guía basta para romper un cruce.
   3. SQL es la fuente de verdad; el tablero es la presentación.
 
-  Escribí el caso completo, con un playground donde puedes reproducir el error con datos sintéticos.
+  Escribí el caso completo, y en mi sitio puedes reproducir el error con datos sintéticos.
 
   ¿Tú validas tus tableros contra la base de datos o confías en el modelo?
 ---
@@ -44,6 +44,25 @@ export const meta = resumen.metadatos;
     ajustando. Todo lo que dice este caso tiene que ser cierto en producción.
   - Completar las métricas reales de "Resultados" (TODO).
 */}
+
+<dl class="case-summary">
+  <div>
+    <dt>Problema</dt>
+    <dd>Los datos de cada envío estaban repartidos entre el ERP y 7 transportadoras: nadie sabía dónde se demoraba un envío, quién cumplía ni cuánto costaba el flete frente a la venta.</dd>
+  </div>
+  <div>
+    <dt>Solución</dt>
+    <dd>Un pipeline en Python que consume las 7 APIs (REST y SOAP) con carga incremental, lleva el dato por capas raw, staging y modelo en SQL Server y deja una tabla con una fila por guía, validada contra SQL.</dd>
+  </div>
+  <div>
+    <dt>Stack</dt>
+    <dd>Python · requests · pandas · SQL Server (T-SQL) · Power BI · Programador de tareas</dd>
+  </div>
+  <div>
+    <dt>Impacto</dt>
+    <dd>{/* TODO: métrica real aproximada — una línea de impacto (volumen cubierto, tiempo ahorrado o una decisión tomada con el ranking). */}Seguimiento histórico de cada envío de la factura a la entrega, tiempos por ruta, cumplimiento comparable entre transportadoras y control del flete frente a la venta.</dd>
+  </div>
+</dl>
 
 ## Contexto y problema
 
@@ -68,23 +87,15 @@ Haz clic en cada etapa (o recórrelas con el teclado) para ver qué datos entran
 
 ## Decisiones técnicas
 
-**Un adaptador por transportadora y un cliente HTTP compartido.** Seis transportadoras responden REST con JSON y una SOAP con XML, cada una con su autenticación (token, llave en parámetros o login con JWT) y sus límites. Cada integración es un adaptador pequeño que entrega siempre el mismo formato; todas usan el mismo cliente HTTP, que reintenta con espera exponencial ante cortes de red y respuestas 429 (respetando `Retry-After`) y renueva el token una vez si vence. Agregar una transportadora es escribir un adaptador, no tocar el resto del pipeline.
+**1. Capas raw, staging y modelo.** El crudo se guarda tal como llegó; la limpieza vive en staging y el modelo se construye después. Si cambia una regla (por ejemplo, cómo se mapea un estado), se reprocesa desde raw sin volver a consultar las APIs, y cada regla de limpieza existe en un solo lugar. *Descarté* limpiar en el tablero: las reglas terminan repartidas entre scripts, Power Query y DAX.
 
-**Carga incremental con marca de agua.** Cada corrida parte de la última fecha cargada y pide solo lo nuevo, en ventanas de fechas contiguas ajustadas al límite de cada API. Las guías que aún no tienen estado final se vuelven a consultar hasta cerrarse. *Descarté* recargar todo en cada corrida: con siete APIs y límites de peticiones, no escala.
+**2. Un adaptador por transportadora y un cliente HTTP compartido.** Seis transportadoras responden REST con JSON y una SOAP con XML, cada una con su autenticación (token, llave en parámetros o login con JWT) y sus límites. Cada integración es un adaptador pequeño que entrega siempre el mismo formato, y todas usan el mismo cliente HTTP, que reintenta con espera exponencial ante cortes de red y respuestas 429 (respetando `Retry-After`) y renueva el token una vez si vence. Agregar una transportadora es escribir un adaptador, no tocar el resto del pipeline.
 
-**Capas raw, staging y modelo.** El crudo se guarda tal como llegó; la limpieza vive en staging y el modelo se construye después. Si cambia una regla (por ejemplo, cómo se mapea un estado), se reprocesa desde raw sin volver a consultar las APIs, y cada regla de limpieza existe en un solo lugar. *Descarté* limpiar en el tablero: las reglas quedaban repartidas entre scripts, Power Query y DAX.
+**3. Carga incremental e idempotente.** Cada corrida parte de la última fecha cargada (marca de agua) y pide solo lo nuevo; las guías sin estado final se vuelven a consultar hasta cerrarse. Volver a correr una carga no duplica guías ni eventos, y la actualización usa `COALESCE`: un campo que llega vacío en la API no borra uno que ya existía. *Descarté* recargar todo en cada corrida: con siete APIs y límites de peticiones, no escala.
 
-**Cargas idempotentes.** Volver a correr una carga no duplica guías ni eventos (cada evento es único por guía y estado), y la actualización usa `COALESCE`: un campo que llega vacío en la API no borra uno que ya existía. Cada guía se guarda en su propia transacción, así que un fallo aislado no tumba la corrida.
+**4. Un modelo común, con una fila por guía.** Una tabla de mapeo versionada `(transportadora, estado de origen, estado común)` traduce el vocabulario de cada una a tres estados: recogida, en tránsito y entregado; lo que no está en la tabla se reporta. La fecha prometida se calcula con la misma regla para todas (primer estado más 2 días a ciudades principales o 3 al resto) y las reexpediciones salen de una tabla de referencia. `fact_envios` tiene exactamente una fila por guía, con su último estado y la fecha de cada etapa: ese grano evita contar dos veces una guía.
 
-**Un modelo común de estados en una tabla de mapeo versionada.** Una tabla `(transportadora, estado de origen, estado común)` traduce el vocabulario de cada una a tres estados comunes: recogida, en tránsito y entregado. Un estado que no está en la tabla se reporta para revisarlo. *Descarté* reglas por texto (por ejemplo, "si contiene *entreg*, es entregado"): son cómodas al inicio y fallan en silencio cuando una transportadora cambia su redacción.
-
-**Reglas de negocio centralizadas.** La fecha prometida se calcula igual para todas las transportadoras: fecha del primer estado más 2 días a ciudades principales o 3 al resto, con las ciudades normalizadas (sin tildes ni diferencias de mayúsculas). Las reexpediciones salen de una tabla de referencia de destinos con su tiempo adicional. Así el cumplimiento es comparable entre transportadoras.
-
-**Grano de una fila por guía en `fact_envios`.** La tabla de hechos tiene exactamente una fila por guía, con su último estado (una sola regla, determinista) y la fecha de cada etapa ya calculada. El historial de eventos queda en `fact_eventos_guia`. Ese grano es el que evita contar dos veces una guía, como se ve en la sección de calidad de datos.
-
-**Comparar transportadoras por ruta, no por promedio general.** Cada transportadora atiende rutas distintas: una que cubre destinos lejanos o de difícil acceso siempre se vería peor en un promedio general. Por eso el tiempo de entrega se calcula por ruta (origen–destino) y transportadora, y solo se comparan transportadoras que comparten la misma ruta. Así la pregunta pasa de "¿quién es más lento?" a "¿quién es más lento yendo al mismo lugar?".
-
-**SQL Server como fuente de verdad, con métricas definidas por escrito.** Los indicadores se calculan y se validan en SQL; Power BI los muestra y permite filtrarlos. Cada métrica tiene una definición escrita. Por ejemplo, el OTD es el porcentaje de guías entregadas cuya entrega fue igual o anterior a la fecha prometida; las guías en tránsito no cuentan todavía. Si un número del tablero no coincide con la consulta, el que está mal es el tablero.
+**5. Métricas comparables y definidas por escrito.** Cada transportadora atiende rutas distintas, y una que cubre destinos lejanos siempre se vería peor en un promedio general. Por eso los tiempos se calculan por ruta (origen–destino) y solo se comparan transportadoras que comparten la ruta: la pregunta pasa de "¿quién es más lento?" a "¿quién es más lento yendo al mismo lugar?". Cada métrica tiene una definición escrita: el OTD es el porcentaje de guías entregadas cuya entrega fue igual o anterior a la fecha prometida. Se calculan y validan en SQL Server; si el tablero no coincide con la consulta, el que está mal es el tablero.
 
 ## Partes interesantes del código
 
@@ -216,9 +227,9 @@ RETURN
 
 Esta es la parte del proyecto de la que más aprendí.
 
-Con el tablero terminado, hice lo que hago con cualquier indicador antes de entregarlo: lo comparé con una consulta directa en SQL. Para casi todas las transportadoras los números coincidían. Para una, el OTD de Power BI salía **unos 6 puntos más bajo** que el de SQL.
+Con el tablero terminado, hice lo que hago con cualquier indicador antes de entregarlo: lo comparé con una consulta directa en SQL. Para casi todas las transportadoras los números coincidían. Para una, el OTD de Power BI salía **varios puntos más bajo** que el de SQL.
 
-La causa estaba en el modelo. Una relación unía cada guía con la tabla de sus estados, y la medida contaba filas de esa tabla. Una guía con tres estados (despachada, en tránsito, entregada) contaba tres veces. Peor aún: las guías que pasan por una **novedad** acumulan más estados, y esas son justamente las que suelen llegar tarde. El error no era aleatorio: castigaba siempre a las transportadoras con más novedades.
+La causa estaba en el modelo. Una relación unía cada guía con la tabla de sus estados, y la medida contaba filas de esa tabla. Una guía con tres estados (recogida, en tránsito, entregada) contaba tres veces. Y el error no pesaba igual para todas: cada transportadora reporta un número distinto de estados, así que el indicador castigaba más a unas que a otras.
 
 Lo corregí con un filtro explícito en la medida, para que cada guía cuente una vez con su estado final, y dejé la consulta de SQL como referencia para validar el tablero.
 
@@ -297,7 +308,7 @@ FROM prorrateo;
 
 ## Resultados
 
-{/* TODO: métrica real aproximada — cuántos pedidos o guías al mes cubre el pipeline. */}
+{/* TODO: métrica real aproximada — cuántas guías al mes cubre el pipeline. */}
 {/* TODO: métrica real aproximada — tiempo que tomaba antes armar el seguimiento de un envío y cuánto toma ahora. */}
 {/* TODO: métrica real aproximada — decisiones o cambios que salieron del ranking de OTD (sin nombrar transportadoras). */}
 
