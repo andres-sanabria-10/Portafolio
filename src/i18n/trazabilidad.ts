@@ -105,7 +105,7 @@ const es: TraceabilityContent = {
         'Cada corrida parte de la última fecha cargada (marca de agua) y pide a las APIs solo lo nuevo, en ventanas de fechas contiguas. La respuesta se guarda cruda, con la fecha de carga, antes de cualquier transformación.',
       problem:
         'Una de las APIs tomaba la fecha final del rango como exclusiva: al paginar con un día de más se perdía 1 de cada 3 días. Lo detecté validando cuántas guías quedaban sin flete y lo corregí con ventanas contiguas. Guardar el crudo permite reprocesar sin volver a llamar a las APIs.',
-      tech: ['Python', 'Carga incremental', 'Capa raw'],
+      tech: ['Python', 'Programador de tareas (cada 4 h)', 'Capa raw'],
     },
     {
       id: 'staging',
@@ -172,9 +172,9 @@ const es: TraceabilityContent = {
       lane: 'consumo',
       title: 'Tablero en Power BI',
       subtitle: 'Validado contra SQL',
-      inputs: 'El modelo de SQL Server.',
+      inputs: 'Las tablas del modelo y las vistas de métricas de SQL Server, ya limpias.',
       transform:
-        'Medidas DAX de OTD, tiempos por ruta y ranking, y un semáforo de flete vs venta, con filtros por transportadora, ciudad y mes.',
+        'Power BI importa del modelo sin volver a limpiar nada: las reglas ya se aplicaron en staging. Las medidas DAX solo agregan (OTD, tiempos por ruta y ranking, semáforo de flete vs venta), con filtros por fecha, transportadora, cliente, bodega de origen, destino y último estado.',
       problem:
         'Al validar el tablero contra SQL apareció una diferencia: una relación del modelo contaba guías repetidas, una vez por cada estado. Lo corregí con un filtro explícito en la medida y SQL quedó como la referencia para validar.',
       tech: ['Power BI', 'DAX'],

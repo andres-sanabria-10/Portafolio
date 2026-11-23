@@ -52,11 +52,11 @@ export const meta = resumen.metadatos;
   </div>
   <div>
     <dt>Solución</dt>
-    <dd>Un pipeline en Python que consume las 7 APIs (REST y SOAP) con carga incremental, lleva el dato por capas raw, staging y modelo en SQL Server y deja una tabla con una fila por guía, validada contra SQL.</dd>
+    <dd>Un pipeline on-premise en Python que consume las 7 APIs (REST y SOAP) con carga incremental, lleva el dato por capas raw, staging y modelo en SQL Server y deja una tabla con una fila por guía, validada contra SQL.</dd>
   </div>
   <div>
     <dt>Stack</dt>
-    <dd>Python · requests · pandas · SQL Server (T-SQL) · Power BI · Programador de tareas</dd>
+    <dd>Python · requests · pandas · SQL Server (T-SQL) · Power BI · Programador de tareas de Windows · on-premise</dd>
   </div>
   <div>
     <dt>Impacto</dt>
@@ -74,7 +74,7 @@ Las preguntas de negocio eran tres: **¿dónde se demora el envío?**, **¿qué 
 
 ## Arquitectura
 
-El pipeline toma los datos del ERP y de las APIs de 7 transportadoras y los lleva por capas, de lo crudo a lo listo para medir:
+Todo corre on-premise, sobre la infraestructura de la empresa: un script en Python que el Programador de tareas de Windows ejecuta cada 4 horas en un servidor propio y carga en SQL Server, sin costos de nube. El pipeline toma los datos del ERP y de las APIs de 7 transportadoras y los lleva por capas, de lo crudo a lo listo para medir:
 
 - **Raw:** la respuesta de cada API tal como llegó, con la fecha de carga. Permite reprocesar sin volver a llamar a las APIs.
 - **Staging:** el dato limpio y tipado: llaves sin espacios, ciudades normalizadas, fechas parseadas y `NULL` en lugar de valores de relleno.
@@ -322,7 +322,7 @@ FROM prorrateo;
 
 ## Qué haría distinto
 
-- **Orquestar con una herramienta y no solo con tareas programadas.** Con siete fuentes y dependencias entre etapas, algo como Airflow daría reintentos por tarea, alertas y un historial de ejecuciones sin código propio.
+- **Orquestar con una herramienta y no solo con el Programador de tareas.** Con siete fuentes y dependencias entre etapas, algo como Airflow (que también puede correr on-premise) daría reintentos por tarea, alertas y un historial de ejecuciones sin código propio.
 - **Pruebas de calidad declarativas.** Las validaciones de la sección anterior estarían mejor como pruebas versionadas (por ejemplo, con dbt o Great Expectations) que detengan la carga cuando algo no cuadra.
 - **Datos que llegan tarde.** La marca de agua solo mira hacia adelante; una ventana de relectura de los últimos días cubriría las guías que una API publica con retraso.
 - **Probar en la nube.** Es el siguiente paso natural de lo que estoy aprendiendo: dejar la capa raw en S3 en Parquet y consultarla con Athena.
