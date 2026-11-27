@@ -24,7 +24,6 @@ linkedin_post: |
 ---
 
 import DataJourneySection from '../../../components/DataJourneySection.astro';
-import DataJourneyPoster from '../../../components/DataJourneyPoster.astro';
 
 ## En una frase
 
@@ -56,28 +55,6 @@ La idea de fondo no cambia: guardar el crudo, limpiar una sola vez con reglas y 
 - **Rellenar lo que no se sabe.** Un peso en cero o una fecha `1900-01-01` parecen datos y arruinan los promedios; lo que no se conoce es `NULL`.
 - **Contar eventos como si fueran guías.** Una guía con tres estados no son tres envíos.
 - **Comparar promedios generales.** Una transportadora que va a destinos lejanos siempre se verá más lenta si no se compara por ruta.
-
-## La versión para compartir
-
-<DataJourneyPoster
-  id="poster-viaje-dato"
-  lang="es"
-  title="El viaje de un dato"
-  subtitle="Una guía sucia, de la API al tablero, en cinco paradas."
-  cloudTitle="El mismo pipeline en AWS"
-  cloud={[
-    { name: 'Lambda', role: 'Ingesta' },
-    { name: 'S3', role: 'Storage' },
-    { name: 'Glue', role: 'ETL' },
-    { name: 'Athena', role: 'Query' },
-    { name: 'QuickSight', role: 'BI' },
-  ]}
-  themeLabels={{ group: 'Modo de la infografía', light: 'Claro', dark: 'Oscuro' }}
-  author="Andrés Felipe Sanabria"
-  site="andres-felipe-sanabria.uk"
-/>
-
-Descargar en PNG (1080 × 1350): [versión clara](/infografias/el-viaje-de-un-dato-claro.png) · [versión oscura](/infografias/el-viaje-de-un-dato-oscuro.png)
 
 ## Cómo lo apliqué
 

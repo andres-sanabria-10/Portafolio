@@ -4,13 +4,16 @@
  * Abre la página en Chrome sin interfaz, espera a que carguen las fuentes y
  * captura solo el elemento indicado, a doble resolución (≈1080 px de ancho).
  *
- * Uso (con `npm run dev` o `npm run preview` corriendo):
+ * Las infografías para redes viven en /compartir/<pieza>/, una página que solo
+ * existe con `npm run dev`; los PNG van a `redes/`, que git ignora.
+ *
+ * Uso (con `npm run dev` corriendo):
  *   node scripts/export_infografia.mjs <url> <selector> <salida.png> [tema]
  *
  * Ejemplo:
  *   node scripts/export_infografia.mjs \
- *     http://localhost:4321/blog/el-viaje-de-un-dato/ \
- *     "#poster-viaje-dato" public/infografias/el-viaje-de-un-dato.png
+ *     http://localhost:4321/compartir/el-viaje-de-un-dato/ \
+ *     "#poster-viaje-dato" redes/el-viaje-de-un-dato-oscuro.png dark
  *
  * El tema (light | dark) cambia el sitio y la paleta propia de las infografías
  * que la tengan (atributo data-poster-theme).

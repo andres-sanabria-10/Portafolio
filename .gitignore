@@ -38,6 +38,9 @@ tableros/
 *.pbix
 *.pbit
 
+# Imágenes exportadas para redes sociales (se publican en LinkedIn, no en el sitio)
+redes/
+
 # Material de trabajo que no forma parte del sitio
 prompt-claude-code-portafolio.md
 foto sin fondo.jpg

@@ -1,0 +1,36 @@
+---
+import type { GetStaticPaths } from 'astro';
+import DataJourneyPoster from '../../components/DataJourneyPoster.astro';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+
+/**
+ * Infografías para redes sociales, SOLO en desarrollo (`npm run dev`).
+ * En el build de producción getStaticPaths devuelve una lista vacía: estas
+ * páginas no se publican. Sirven para exportar el PNG con
+ * `scripts/export_infografia.mjs`; las imágenes van a `redes/` (ignorada por git).
+ */
+export const getStaticPaths = (() =>
+  import.meta.env.DEV ? [{ params: { pieza: 'el-viaje-de-un-dato' } }] : []) satisfies GetStaticPaths;
+---
+
+<BaseLayout lang="es" title="Infografía para redes" description="Vista previa local para exportar." noindex>
+  <div class="container-page py-12">
+    <DataJourneyPoster
+      id="poster-viaje-dato"
+      lang="es"
+      title="El viaje de un dato"
+      subtitle="Una guía sucia, de la API al tablero, en cinco paradas."
+      cloudTitle="El mismo pipeline en AWS"
+      cloud={[
+        { name: 'Lambda', role: 'Ingesta' },
+        { name: 'S3', role: 'Storage' },
+        { name: 'Glue', role: 'ETL' },
+        { name: 'Athena', role: 'Query' },
+        { name: 'QuickSight', role: 'BI' },
+      ]}
+      themeLabels={{ group: 'Modo de la infografía', light: 'Claro', dark: 'Oscuro' }}
+      author="Andrés Felipe Sanabria"
+      site="andres-felipe-sanabria.uk"
+    />
+  </div>
+</BaseLayout>
