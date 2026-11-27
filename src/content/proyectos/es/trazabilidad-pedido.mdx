@@ -1,6 +1,6 @@
 ---
 title: Trazabilidad de punta a punta del envío
-summary: Pipeline en Python que integra las APIs de 7 transportadoras (REST y SOAP) con carga incremental y capas raw, staging y modelo en SQL Server, normaliza sus estados a un modelo común y mide tiempos por ruta, entrega a tiempo (OTD) y flete frente a la venta.
+summary: Un pipeline on-premise que integra las APIs de 7 transportadoras y responde, guía por guía, si un envío ya se entregó, dónde se demora y qué transportadora cumple.
 # TODO(Andrés): fecha real del proyecto (también define el orden en los listados).
 date: 2026-06-01
 stack: [Python, pandas, APIs REST, SOAP, SQL Server, Power BI]
@@ -101,26 +101,38 @@ Haz clic en cada etapa para ver qué datos entran, qué se transforma y qué pro
 Para un mismo origen y destino, ¿qué transportadora llega más rápido? Ilustrativo, sobre el modelo y con nombres genéricos:
 
 ```sql
+-- Días de recogida a entrega por ruta y transportadora,
+-- solo con 20 entregas o más y en rutas que atienden 2 o más.
 WITH por_ruta AS (
     SELECT
-        ciudad_origen + ' → ' + ciudad_destino               AS ruta,
+        ciudad_origen + ' → ' + ciudad_destino AS ruta,
         transportadora,
-        COUNT(*)                                             AS entregas,
-        AVG(DATEDIFF(HOUR, fecha_recogida, fecha_entrega)) / 24.0 AS dias_promedio
+        COUNT(*) AS entregas,
+        AVG(DATEDIFF(HOUR, fecha_recogida, fecha_entrega)) / 24.0
+            AS dias_promedio
     FROM modelo.vw_fact_envios
     WHERE ultimo_estado = 'entregado'
     GROUP BY ciudad_origen, ciudad_destino, transportadora
-    HAVING COUNT(*) >= 20                                    -- solo con volumen suficiente
+    HAVING COUNT(*) >= 20
+),
+compartidas AS (
+    SELECT ruta
+    FROM por_ruta
+    GROUP BY ruta
+    HAVING COUNT(*) >= 2
 )
 SELECT
-    ruta,
-    transportadora,
-    entregas,
-    CAST(dias_promedio AS DECIMAL(5, 2))                     AS dias_promedio,
-    RANK() OVER (PARTITION BY ruta ORDER BY dias_promedio)   AS puesto_en_ruta
-FROM por_ruta
-WHERE ruta IN (SELECT ruta FROM por_ruta GROUP BY ruta HAVING COUNT(*) >= 2)  -- rutas compartidas
-ORDER BY ruta, puesto_en_ruta;
+    p.ruta,
+    p.transportadora,
+    p.entregas,
+    CAST(p.dias_promedio AS DECIMAL(5, 2)) AS dias_promedio,
+    RANK() OVER (
+        PARTITION BY p.ruta
+        ORDER BY p.dias_promedio
+    ) AS puesto_en_ruta
+FROM por_ruta AS p
+JOIN compartidas AS c ON c.ruta = p.ruta
+ORDER BY p.ruta, puesto_en_ruta;
 ```
 
 ## Calidad de datos

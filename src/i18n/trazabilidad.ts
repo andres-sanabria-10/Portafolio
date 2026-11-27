@@ -122,26 +122,15 @@ const es: TraceabilityContent = {
     {
       id: 'normalizacion',
       lane: 'pipeline',
-      title: 'Normalización de estados',
-      subtitle: 'Un modelo común',
-      inputs: 'Los estados crudos de cada transportadora, cada una con su propio vocabulario.',
+      title: 'Modelo común',
+      subtitle: 'Estados y reglas de negocio',
+      inputs:
+        'Los estados de cada transportadora, cada una con su propio vocabulario, y las guías limpias con su destino.',
       transform:
-        'Una tabla de mapeo versionada (transportadora, estado de origen, estado común) traduce cada estado a un modelo común: recogida, en tránsito y entregado. Un estado que no está en la tabla se reporta para revisarlo, no pasa en silencio.',
+        'Una tabla de mapeo versionada (transportadora, estado de origen, estado común) traduce cada estado a tres: recogida, en tránsito y entregado; lo que no está en la tabla se reporta. La fecha prometida se calcula igual para todas (primer estado más 2 días a ciudades principales o 3 al resto) y una tabla de referencia marca las reexpediciones.',
       problem:
-        'Cada transportadora llama distinto a lo mismo (una dice "ENTREGADO", otra "Entrega", otra "ENTREGA VERIFICADA"). Sin un modelo común no se podía comparar una con otra ni medir la entrega a tiempo con la misma regla.',
-      tech: ['SQL', 'Tabla de mapeo'],
-    },
-    {
-      id: 'reexpediciones',
-      lane: 'pipeline',
-      title: 'Reexpediciones y fecha prometida',
-      subtitle: 'Reglas de negocio centralizadas',
-      inputs: 'Las guías limpias, con su destino y la fecha de su primer estado.',
-      transform:
-        'Una tabla de referencia marca los destinos que requieren una segunda transportadora y su tiempo adicional. La fecha prometida se calcula igual para todas: primer estado más 2 días a ciudades principales o 3 al resto.',
-      problem:
-        'Cada transportadora prometía con su propio criterio, así que el cumplimiento no era comparable. Una sola regla de fecha prometida y una referencia de reexpediciones permiten medir a todas por igual y analizar aparte los envíos que tardan más por naturaleza.',
-      tech: ['Python', 'SQL', 'Tablas de referencia'],
+        'Cada transportadora llama distinto a lo mismo (una dice "ENTREGADO", otra "Entrega", otra "ENTREGA VERIFICADA") y prometía con su propio criterio. Sin un modelo común y una sola regla de fecha prometida, el cumplimiento no era comparable.',
+      tech: ['SQL', 'Tabla de mapeo', 'Tablas de referencia'],
     },
     {
       id: 'fact',

@@ -52,11 +52,17 @@ describe('fillTemplate', () => {
 describe('contenido del caso de trazabilidad', () => {
   const { lanes, stages } = getTraceabilityContent('es');
 
-  it('tiene las 10 etapas del flujo (sin contact center, con raw y staging) y todas caen en un carril', () => {
-    expect(stages).toHaveLength(10);
+  it('tiene las 9 etapas del flujo (con raw y staging) y todas caen en un carril', () => {
+    expect(stages).toHaveLength(9);
     expect(stages.map((s) => s.id)).toContain('staging');
     expect(stages[0]?.id).toBe('facturacion');
-    expect(groupByLane(lanes, stages).flatMap((g) => g.items)).toHaveLength(10);
+    expect(groupByLane(lanes, stages).flatMap((g) => g.items)).toHaveLength(9);
+  });
+
+  it('ningún carril tiene más de 3 etapas (en escritorio las cajas no caben)', () => {
+    for (const group of groupByLane(lanes, stages)) {
+      expect(group.items.length, group.lane.id).toBeLessThanOrEqual(3);
+    }
   });
 
   it('cada etapa explica entrada, transformación, problema y tecnología', () => {
