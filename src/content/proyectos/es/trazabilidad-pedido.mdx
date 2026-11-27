@@ -1,8 +1,8 @@
 ---
 title: Trazabilidad de punta a punta del envío
 summary: Un pipeline on-premise que integra las APIs de 7 transportadoras y responde, guía por guía, si un envío ya se entregó, dónde se demora y qué transportadora cumple.
-# TODO(Andrés): fecha real del proyecto (también define el orden en los listados).
-date: 2026-06-01
+# Operación completa desde marzo de 2026 (las 7 transportadoras integradas).
+date: 2026-03-01
 stack: [Python, pandas, APIs REST, SOAP, SQL Server, Power BI]
 flow: [APIs REST y SOAP, Ingesta incremental (raw), Staging, Mapeo de estados, fact_envios, Power BI]
 role: Diseño y desarrollo del ETL y del modelo de estados
@@ -58,7 +58,7 @@ export const peor = resumen.otd_por_transportadora.reduce((a, b) => (b.diferenci
   </div>
   <div>
     <dt>Impacto</dt>
-    <dd>Más de 54.000 guías seguidas de punta a punta desde enero de 2026 (unas 6.000 al mes desde marzo) y más de 150.000 eventos de seguimiento, hacia más de 250 destinos. Cada envío tiene su línea de tiempo, los tiempos se comparan por ruta y el cumplimiento se mide con la misma regla para las 7 transportadoras.</dd>
+    <dd>Desde marzo de 2026, más de 54.000 guías de 7 transportadoras (unas 6.000 al mes) y más de 150.000 eventos de seguimiento, hacia más de 250 destinos; más de 49.000 guías con su línea de tiempo completa. Los tiempos se comparan por ruta y el cumplimiento se mide con la misma regla para todas.</dd>
   </div>
 </dl>
 
@@ -156,8 +156,8 @@ En cada carga se valida que haya una fila por guía, que no queden estados sin m
 {/* TODO: métrica real aproximada — cuánto tomaba antes responder "¿dónde está mi envío?" y cuánto toma ahora. */}
 {/* TODO: métrica real aproximada — una decisión o cambio que salió del ranking (sin nombrar transportadoras). */}
 
-- **Más de 54.000 guías** de 7 transportadoras desde enero de 2026; desde marzo, con todas integradas, unas **6.000 guías al mes** hacia más de 250 destinos y más de 500 clientes.
-- **Más de 150.000 eventos de seguimiento**, unos 3 por guía (recogida, tránsito y entrega).
+- **Más de 54.000 guías** de 7 transportadoras desde marzo de 2026, unas **6.000 al mes**, hacia más de 250 destinos y más de 500 clientes.
+- **Más de 150.000 eventos de seguimiento**: más de 49.000 guías tienen su línea de tiempo completa (recogida, tránsito y entrega), y las que no tienen ningún evento quedan en una alerta para revisarlas.
 - Cada envío tiene su línea de tiempo completa, de la factura a la entrega: se sabe si ya se entregó, cuándo lo recogieron y dónde está.
 - Tiempos por ruta y transportadora, para elegir quién llega más rápido a cada destino.
 - Un ranking de cumplimiento con la misma regla para las siete transportadoras.
