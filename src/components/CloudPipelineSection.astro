@@ -1,0 +1,14 @@
+---
+import type { Lang } from '../i18n/config';
+import { getCloudContent } from '../i18n/cloud';
+import CloudPipeline from './vue/CloudPipeline.vue';
+
+/** La misma tubería on-premise y en AWS, lista para el MDX: `<CloudPipelineSection lang="es" />`. */
+interface Props {
+  lang: Lang;
+}
+
+const { lang } = Astro.props;
+---
+
+<CloudPipeline client:visible content={getCloudContent(lang)} />

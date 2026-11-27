@@ -23,6 +23,7 @@ linkedin_post: |
   #DataEngineering #CalidadDeDatos
 ---
 
+import CloudPipelineSection from '../../../components/CloudPipelineSection.astro';
 import DataJourneySection from '../../../components/DataJourneySection.astro';
 
 ## En una frase
@@ -37,15 +38,9 @@ Esta guía es sintética, pero sus problemas son los que llegan de verdad de una
 
 ## ¿Y en la nube?
 
-El pipeline del recorrido corre on-premise, con Python y SQL Server. Las etapas son las mismas en la nube; solo cambian las piezas. Así lo armaría en AWS, que es lo que estoy aprendiendo:
+El pipeline del recorrido corre on-premise, con Python y SQL Server. En la nube las etapas son las mismas; solo cambian las piezas. Cambia de entorno y mira: el dato sigue fluyendo igual. Así lo armaría en AWS, que es lo que estoy aprendiendo.
 
-| Etapa | On-premise | En AWS |
-| --- | --- | --- |
-| Ingesta programada | Python + Programador de tareas | AWS Lambda + Amazon EventBridge |
-| Raw | Tabla en SQL Server | Amazon S3, en Parquet y particionado por fecha |
-| Staging | Vistas en SQL Server | AWS Glue (catálogo y trabajos de limpieza) |
-| Modelo y consulta | Vistas en SQL Server | Amazon Athena (o Redshift si crece) |
-| Consumo | Power BI | Power BI o Amazon QuickSight |
+<CloudPipelineSection lang="es" />
 
 La idea de fondo no cambia: guardar el crudo, limpiar una sola vez con reglas y dejar un modelo con un grano claro.
 

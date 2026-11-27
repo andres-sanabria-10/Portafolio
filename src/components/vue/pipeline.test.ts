@@ -39,6 +39,16 @@ describe('layoutPipeline', () => {
     expect(layoutPipeline(6, 'vertical').height).toBeGreaterThan(layoutPipeline(5, 'vertical').height);
   });
 
+  it('acepta medidas propias sin solapar las cajas', () => {
+    const layout = layoutPipeline(5, 'horizontal', { horizontal: { height: 112, boxWidth: 176, boxHeight: 96 } });
+    expect(layout.height).toBe(112);
+    expect(layout.boxes[0]!.height).toBe(96);
+    for (const [i, box] of layout.boxes.entries()) {
+      const next = layout.boxes[i + 1];
+      if (next) expect(box.x + box.width).toBeLessThan(next.x);
+    }
+  });
+
   it('rechaza pipelines de menos de 2 etapas', () => {
     expect(() => layoutPipeline(1, 'horizontal')).toThrow(RangeError);
     expect(() => layoutPipeline(2.5, 'vertical')).toThrow(RangeError);

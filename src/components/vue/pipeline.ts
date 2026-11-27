@@ -56,15 +56,30 @@ export interface PipelineLayout {
 const HORIZONTAL = { width: 1100, height: 84, margin: 8, boxWidth: 156, boxHeight: 68 };
 const VERTICAL = { width: 340, margin: 8, boxWidth: 260, boxHeight: 62, gap: 46 };
 
-export function layoutPipeline(count: number, orientation: Orientation): PipelineLayout {
+export type HorizontalSize = typeof HORIZONTAL;
+export type VerticalSize = typeof VERTICAL;
+
+/** Medidas propias para un diagrama concreto (por defecto, las del inicio). */
+export interface LayoutSize {
+  horizontal?: Partial<HorizontalSize>;
+  vertical?: Partial<VerticalSize>;
+}
+
+export function layoutPipeline(
+  count: number,
+  orientation: Orientation,
+  size: LayoutSize = {},
+): PipelineLayout {
   if (!Number.isInteger(count) || count < 2) {
     throw new RangeError(`Un pipeline necesita al menos 2 etapas (recibió ${count}).`);
   }
-  return orientation === 'horizontal' ? layoutHorizontal(count) : layoutVertical(count);
+  return orientation === 'horizontal'
+    ? layoutHorizontal(count, { ...HORIZONTAL, ...size.horizontal })
+    : layoutVertical(count, { ...VERTICAL, ...size.vertical });
 }
 
-function layoutHorizontal(count: number): PipelineLayout {
-  const { width, height, margin, boxWidth, boxHeight } = HORIZONTAL;
+function layoutHorizontal(count: number, dims: HorizontalSize): PipelineLayout {
+  const { width, height, margin, boxWidth, boxHeight } = dims;
   const step = (width - 2 * margin - boxWidth) / (count - 1);
   const cy = height / 2;
   const boxes = Array.from({ length: count }, (_, i) => {
@@ -81,8 +96,8 @@ function layoutHorizontal(count: number): PipelineLayout {
   };
 }
 
-function layoutVertical(count: number): PipelineLayout {
-  const { width, margin, boxWidth, boxHeight, gap } = VERTICAL;
+function layoutVertical(count: number, dims: VerticalSize): PipelineLayout {
+  const { width, margin, boxWidth, boxHeight, gap } = dims;
   const height = 2 * margin + count * boxHeight + (count - 1) * gap;
   const cx = width / 2;
   const boxes = Array.from({ length: count }, (_, i) => {
