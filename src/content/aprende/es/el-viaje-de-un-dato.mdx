@@ -66,12 +66,19 @@ La idea de fondo no cambia: guardar el crudo, limpiar una sola vez con reglas y 
   title="El viaje de un dato"
   subtitle="Una guía sucia, de la API al tablero, en cinco paradas."
   cloudTitle="El mismo pipeline en AWS"
-  cloud={['Lambda', 'S3', 'Glue', 'Athena', 'QuickSight']}
+  cloud={[
+    { name: 'Lambda', role: 'Ingesta' },
+    { name: 'S3', role: 'Storage' },
+    { name: 'Glue', role: 'ETL' },
+    { name: 'Athena', role: 'Query' },
+    { name: 'QuickSight', role: 'BI' },
+  ]}
+  themeLabels={{ group: 'Modo de la infografía', light: 'Claro', dark: 'Oscuro' }}
   author="Andrés Felipe Sanabria"
   site="andres-felipe-sanabria.uk"
 />
 
-[Descargar la imagen en PNG (1080 × 1350)](/infografias/el-viaje-de-un-dato.png)
+Descargar en PNG (1080 × 1350): [versión clara](/infografias/el-viaje-de-un-dato-claro.png) · [versión oscura](/infografias/el-viaje-de-un-dato-oscuro.png)
 
 ## Cómo lo apliqué
 

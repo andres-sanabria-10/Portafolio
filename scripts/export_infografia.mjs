@@ -12,6 +12,9 @@
  *     http://localhost:4321/aprende/el-viaje-de-un-dato/ \
  *     "#poster-viaje-dato" public/infografias/el-viaje-de-un-dato.png
  *
+ * El tema (light | dark) cambia el sitio y la paleta propia de las infografías
+ * que la tengan (atributo data-poster-theme).
+ *
  * La ruta de Chrome se puede cambiar con la variable CHROME_PATH.
  */
 import { spawn } from 'node:child_process';
@@ -82,7 +85,7 @@ try {
   await enviar('Page.enable');
   await enviar('Page.navigate', { url });
   await esperar(2500);
-  await evaluar(`localStorage.setItem('theme', '${tema}'); document.documentElement.dataset.theme = '${tema}'; 'ok'`);
+  await evaluar(`localStorage.setItem('theme', '${tema}'); document.documentElement.dataset.theme = '${tema}'; document.querySelectorAll('[data-poster-theme]').forEach((el) => { el.dataset.posterTheme = '${tema}'; }); 'ok'`);
   await evaluar('document.fonts.ready.then(() => true)');
 
   const caja = await evaluar(`(() => {

@@ -1,279 +1,683 @@
 ---
+import ArchiveIcon from '@phosphor-icons/core/assets/bold/archive-bold.svg';
+import ArrowRightIcon from '@phosphor-icons/core/assets/bold/arrow-right-bold.svg';
+import ChartLineUpIcon from '@phosphor-icons/core/assets/bold/chart-line-up-bold.svg';
+import DatabaseIcon from '@phosphor-icons/core/assets/bold/database-bold.svg';
+import GearSixIcon from '@phosphor-icons/core/assets/bold/gear-six-bold.svg';
+import LightningIcon from '@phosphor-icons/core/assets/bold/lightning-bold.svg';
+import MagicWandIcon from '@phosphor-icons/core/assets/bold/magic-wand-bold.svg';
+import MagnifyingGlassIcon from '@phosphor-icons/core/assets/bold/magnifying-glass-bold.svg';
+import PlugsConnectedIcon from '@phosphor-icons/core/assets/bold/plugs-connected-bold.svg';
+import TableIcon from '@phosphor-icons/core/assets/bold/table-bold.svg';
+import TrophyIcon from '@phosphor-icons/core/assets/bold/trophy-bold.svg';
 import type { Lang } from '../i18n/config';
 import { getJourneyContent } from '../i18n/journey';
 
 /**
- * Imagen para redes de "El viaje de un dato". Mide exactamente 540 × 675 px
- * (4:5): exportada al doble queda en 1080 × 1350, el formato vertical que
- * LinkedIn e Instagram muestran completo en el feed.
+ * Infografía para redes de "El viaje de un dato": una tubería vertical que une
+ * las cinco paradas, con el dato transformándose en cada una, y debajo la misma
+ * arquitectura en AWS.
  *
- *   node scripts/export_infografia.mjs <url> "#poster-viaje-dato" public/infografias/el-viaje-de-un-dato.png
+ * Mide exactamente 540 × 675 px (4:5): exportada al doble queda en 1080 × 1350,
+ * el formato vertical que LinkedIn e Instagram muestran completo en el feed.
+ * Tiene su propia paleta clara (cuadrícula técnica) y oscura (slate con acentos
+ * esmeralda y cian), que se alternan con los botones de arriba.
+ *
+ *   node scripts/export_infografia.mjs <url> "#poster-viaje-dato" salida.png light|dark
  *
  * Usa los mismos datos sintéticos que DataJourney.vue.
  */
+interface CloudService {
+  name: string;
+  role: string;
+}
+
 interface Props {
   id: string;
   lang: Lang;
   title: string;
   subtitle: string;
   cloudTitle: string;
-  cloud: string[];
+  cloud: CloudService[];
   author: string;
   site: string;
+  themeLabels: { group: string; light: string; dark: string };
 }
 
-const { id, lang, title, subtitle, cloudTitle, cloud, author, site } = Astro.props;
+const { id, lang, title, subtitle, cloudTitle, cloud, author, site, themeLabels } = Astro.props;
 const { steps } = getJourneyContent(lang);
-const pick = (stepId: string) => steps.find((s) => s.id === stepId)!;
-const api = pick('api');
-const staging = pick('staging');
-const modelo = pick('modelo');
-const metrica = pick('metrica');
-const field = (stepId: string, key: string) => pick(stepId).fields.find((f) => f.key === key)?.value ?? '';
+const step = (stepId: string) => steps.find((s) => s.id === stepId)!;
+const value = (stepId: string, key: string) =>
+  (step(stepId).fields.find((f) => f.key === key)?.value ?? '').replaceAll("'", '').replaceAll('"', '');
+
+const stageIcons = [PlugsConnectedIcon, DatabaseIcon, MagicWandIcon, TableIcon, TrophyIcon];
+const cloudIcons = [LightningIcon, ArchiveIcon, GearSixIcon, MagnifyingGlassIcon, ChartLineUpIcon];
+const api = step('api');
+const staging = step('staging');
+const modelo = step('modelo');
+const ruta = value('metrica', 'ruta');
+const transportadora = value('metrica', 'transportadora');
+const dias = value('metrica', 'dias_promedio');
+const puesto = value('metrica', 'puesto_en_ruta');
+const hora = (stepId: string, key: string) => value(stepId, key).slice(5); // "05-02 16:40"
 ---
 
-<figure id={id} class="poster not-prose" aria-label={`${title}. ${subtitle}`}>
-  <header>
-    <h2 class="poster-title">{title}</h2>
-    <p class="poster-subtitle">{subtitle}</p>
-  </header>
+<div class="poster-wrap not-prose">
+  <div class="poster-toolbar" role="group" aria-label={themeLabels.group}>
+    <button type="button" data-poster-target={id} data-poster-set="light" aria-pressed="true">{themeLabels.light}</button>
+    <button type="button" data-poster-target={id} data-poster-set="dark" aria-pressed="false">{themeLabels.dark}</button>
+  </div>
 
-  <ol class="poster-steps">
-    <li>
-      <span class="poster-step"><b>1</b>{api.label}</span>
-      <div class="poster-body">
-        <p class="poster-note">{api.title}</p>
-        <code class="poster-code">{api.fields.slice(0, 3).map((f) => f.value).join('  ')}</code>
-      </div>
-    </li>
-    <li>
-      <span class="poster-step"><b>2</b>{pick('raw').label}</span>
-      <div class="poster-body">
-        <p class="poster-note">{pick('raw').title}</p>
-        <code class="poster-code">+ fecha_carga {field('raw', 'fecha_carga')}</code>
-      </div>
-    </li>
-    <li class="is-key">
-      <span class="poster-step"><b>3</b>{staging.label}</span>
-      <div class="poster-body">
-        <p class="poster-note">{staging.title}</p>
-        <ul class="poster-diff">
-          {
-            staging.fields.slice(0, 4).map((f) => (
-              <li>
-                <del>{f.before}</del>
-                <span aria-hidden="true">→</span>
-                <ins>{f.value}</ins>
+  <figure id={id} class="poster" data-poster-theme="light" aria-label={`${title}. ${subtitle}`}>
+    <header class="poster-head">
+      <h2 class="poster-title">{title}</h2>
+      <p class="poster-subtitle">{subtitle}</p>
+    </header>
+
+    <ol class="pipe">
+      <!-- 1. API -->
+      <li class="pipe-stop">
+        <span class="pipe-node" aria-hidden="true">{(() => { const I = stageIcons[0]!; return <I width="15" height="15" />; })()}</span>
+        <div class="card">
+          <p class="card-head"><span class="chip">01 · {api.label}</span>{api.title}</p>
+          <code class="code">
+            <span class="tok-p">{'{'}</span> <span class="tok-k">"numero"</span>: <span class="tok-s">{api.fields[0]!.value}</span>, <span class="tok-k">"estado"</span>: <span class="tok-s">{api.fields[1]!.value}</span>, <span class="tok-k">"ciudad"</span>: <span class="tok-s">{api.fields[2]!.value}</span> <span class="tok-p">{'}'}</span>
+          </code>
+        </div>
+      </li>
+
+      <!-- 2. Raw -->
+      <li class="pipe-stop">
+        <span class="pipe-node" aria-hidden="true">{(() => { const I = stageIcons[1]!; return <I width="15" height="15" />; })()}</span>
+        <div class="card">
+          <p class="card-head"><span class="chip">02 · {step('raw').label}</span>{step('raw').title}</p>
+          <code class="code">
+            <span class="tok-op">+</span> <span class="tok-k">fecha_carga</span> <span class="tok-op">=</span> <span class="tok-n">{value('raw', 'fecha_carga')}</span>
+            <span class="tok-c">  -- sin limpiar</span>
+          </code>
+        </div>
+      </li>
+
+      <!-- 3. Staging: la limpieza es la protagonista -->
+      <li class="pipe-stop is-star">
+        <span class="pipe-node" aria-hidden="true">{(() => { const I = stageIcons[2]!; return <I width="15" height="15" />; })()}</span>
+        <div class="card card-star">
+          <p class="card-head"><span class="chip chip-star">03 · {staging.label}</span>{staging.title}</p>
+          <ul class="diff">
+            {
+              staging.fields.slice(0, 4).map((f) => (
+                <li>
+                  <del class="diff-bad">{f.before}</del>
+                  <span class="diff-arrow" aria-hidden="true">
+                    <ArrowRightIcon width="11" height="11" />
+                  </span>
+                  <ins class="diff-good">{f.value}</ins>
+                </li>
+              ))
+            }
+          </ul>
+        </div>
+      </li>
+
+      <!-- 4. Modelo -->
+      <li class="pipe-stop">
+        <span class="pipe-node" aria-hidden="true">{(() => { const I = stageIcons[3]!; return <I width="15" height="15" />; })()}</span>
+        <div class="card">
+          <p class="card-head"><span class="chip">04 · {modelo.label}</span>{modelo.title}</p>
+          <ol class="timeline">
+            <li><span>recogida</span><b>{hora('modelo', 'fecha_recogida')}</b></li>
+            <li><span>tránsito</span><b>{hora('modelo', 'fecha_transito')}</b></li>
+            <li><span>entrega</span><b>{hora('modelo', 'fecha_entrega')}</b></li>
+          </ol>
+        </div>
+      </li>
+
+      <!-- 5. Métrica: el valor de negocio -->
+      <li class="pipe-stop is-goal">
+        <span class="pipe-node" aria-hidden="true">{(() => { const I = stageIcons[4]!; return <I width="15" height="15" />; })()}</span>
+        <div class="card card-goal">
+          <p class="card-head"><span class="chip">05 · {step('metrica').label}</span>{step('metrica').title}</p>
+          <div class="kpis">
+            <p class="kpi-main"><strong>{dias.replace('.', ',')}</strong><span>días<br />promedio</span></p>
+            <p class="kpi-badge"><TrophyIcon width="13" height="13" aria-hidden="true" />Puesto {puesto}</p>
+            <p class="kpi-route">{ruta}<br /><span>{transportadora}</span></p>
+          </div>
+        </div>
+      </li>
+    </ol>
+
+    <section class="cloud">
+      <p class="cloud-title">{cloudTitle}</p>
+      <ol class="cloud-row">
+        {
+          cloud.map((service, i) => {
+            const Icon = cloudIcons[i % cloudIcons.length]!;
+            return (
+              <li class="cloud-item">
+                <span class="cloud-box">
+                  <Icon width="15" height="15" aria-hidden="true" />
+                  {service.name}
+                </span>
+                <span class="cloud-role">{service.role}</span>
               </li>
-            ))
-          }
-        </ul>
-      </div>
-    </li>
-    <li>
-      <span class="poster-step"><b>4</b>{modelo.label}</span>
-      <div class="poster-body">
-        <p class="poster-note">{modelo.title}</p>
-        <code class="poster-code">
-          recogida {field('modelo', 'fecha_recogida').slice(5)} · tránsito {field('modelo', 'fecha_transito').slice(5)} · entrega {field('modelo', 'fecha_entrega').slice(5)}
-        </code>
-      </div>
-    </li>
-    <li>
-      <span class="poster-step"><b>5</b>{metrica.label}</span>
-      <div class="poster-body">
-        <p class="poster-note">{metrica.title}</p>
-        <p class="poster-answer">
-          {field('metrica', 'ruta').replaceAll("'", '')} · {field('metrica', 'transportadora').replaceAll("'", '')} ·{' '}
-          <strong>{field('metrica', 'dias_promedio').replace('.', ',')} días</strong> · puesto {field('metrica', 'puesto_en_ruta')}
-        </p>
-      </div>
-    </li>
-  </ol>
+            );
+          })
+        }
+      </ol>
+    </section>
 
-  <section class="poster-cloud">
-    <p class="poster-cloud-title">{cloudTitle}</p>
-    <p class="poster-cloud-chain">
-      {
-        cloud.map((item, i) => (
-          <>
-            <span>{item}</span>
-            {i < cloud.length - 1 && <span class="poster-arrow" aria-hidden="true">→</span>}
-          </>
-        ))
+    <footer class="poster-foot">
+      <span>{author}</span>
+      <span>{site}</span>
+    </footer>
+  </figure>
+</div>
+
+<script>
+  // Botones Claro / Oscuro: cambian solo la paleta de la infografía, no la del sitio.
+  for (const button of document.querySelectorAll<HTMLButtonElement>('[data-poster-target]')) {
+    button.addEventListener('click', () => {
+      const poster = document.getElementById(button.dataset.posterTarget ?? '');
+      if (!poster) return;
+      poster.dataset.posterTheme = button.dataset.posterSet;
+      for (const sibling of button.parentElement?.querySelectorAll('button') ?? []) {
+        sibling.setAttribute('aria-pressed', String(sibling === button));
       }
-    </p>
-  </section>
-
-  <footer class="poster-footer">
-    <span>{author}</span>
-    <span>{site}</span>
-  </footer>
-</figure>
+    });
+  }
+</script>
 
 <style>
+  .poster-wrap {
+    margin-block: 2rem;
+  }
+
+  .poster-toolbar {
+    display: inline-flex;
+    gap: 0.25rem;
+    margin-bottom: 0.75rem;
+    padding: 0.25rem;
+    border: 1px solid var(--line);
+    border-radius: 9999px;
+  }
+
+  .poster-toolbar button {
+    min-height: 2.25rem;
+    padding: 0.25rem 0.875rem;
+    border-radius: 9999px;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: var(--muted);
+  }
+
+  .poster-toolbar button[aria-pressed='true'] {
+    background: var(--accent);
+    color: var(--on-accent);
+  }
+
+  /* ---------- Paletas propias de la infografía ---------- */
+  .poster {
+    --bg: #f8fafc;
+    --grid: rgb(15 118 110 / 0.07);
+    --card: rgb(255 255 255 / 0.86);
+    --card-line: #dbe3ec;
+    --fg: #0f172a;
+    --muted: #475569;
+    --emerald: #059669;
+    --cyan: #0891b2;
+    --code-bg: #f1f5f9;
+    --tok-k: #0e7490;
+    --tok-s: #b45309;
+    --tok-n: #7c3aed;
+    --bad: #dc2626;
+    --bad-bg: rgb(220 38 38 / 0.08);
+    --good: #047857;
+    --good-bg: rgb(5 150 105 / 0.12);
+    --glow: none;
+    --shadow: 0 6px 18px rgb(15 23 42 / 0.07);
+  }
+
+  .poster[data-poster-theme='dark'] {
+    --bg: #020617;
+    --grid: rgb(45 212 191 / 0.06);
+    --card: rgb(255 255 255 / 0.045);
+    --card-line: rgb(148 163 184 / 0.18);
+    --fg: #e2e8f0;
+    --muted: #94a3b8;
+    --emerald: #34d399;
+    --cyan: #22d3ee;
+    --code-bg: rgb(15 23 42 / 0.85);
+    --tok-k: #67e8f9;
+    --tok-s: #fcd34d;
+    --tok-n: #c4b5fd;
+    --bad: #f87171;
+    --bad-bg: rgb(248 113 113 / 0.1);
+    --good: #34d399;
+    --good-bg: rgb(52 211 153 / 0.12);
+    --glow: 0 0 12px rgb(52 211 153 / 0.45);
+    --shadow: 0 8px 24px rgb(0 0 0 / 0.35);
+  }
+
   .poster {
     display: flex;
     flex-direction: column;
     width: 540px;
     max-width: 100%;
     height: 675px;
-    margin-block: 2rem;
-    padding: 30px 28px 20px;
+    padding: 20px 22px 12px;
     overflow: hidden;
-    border: 1px solid var(--line);
-    border-radius: 14px;
-    background-color: var(--surface);
+    border-radius: 16px;
     color: var(--fg);
+    font-family: var(--font-sans);
+    background-color: var(--bg);
+    /* Cuadrícula técnica de fondo, como un plano. */
+    background-image:
+      linear-gradient(var(--grid) 1px, transparent 1px),
+      linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+    background-size: 18px 18px;
   }
 
   .poster-title {
-    font-size: 32px;
-    font-weight: 750;
-    line-height: 1.05;
-    letter-spacing: -0.03em;
+    font-size: 28px;
+    font-weight: 800;
+    line-height: 1;
+    letter-spacing: -0.035em;
+  }
+
+  .poster-title::after {
+    content: '';
+    display: block;
+    width: 44px;
+    height: 4px;
+    margin-top: 7px;
+    border-radius: 9999px;
+    background: linear-gradient(90deg, var(--emerald), var(--cyan));
   }
 
   .poster-subtitle {
-    margin-top: 8px;
-    font-size: 15px;
-    line-height: 1.4;
+    margin-top: 6px;
+    font-size: 13px;
+    line-height: 1.35;
     color: var(--muted);
   }
 
-  .poster-steps {
+  /* ---------- La tubería ---------- */
+  .pipe {
+    position: relative;
     display: grid;
-    gap: 9px;
-    margin-top: 20px;
+    gap: 6px;
+    margin-top: 11px;
   }
 
-  .poster-steps > li {
+  /* Tubo continuo que pasa por el centro de todos los nodos. */
+  .pipe::before {
+    content: '';
+    position: absolute;
+    left: 14px;
+    top: 14px;
+    bottom: 30px;
+    width: 4px;
+    border-radius: 9999px;
+    background: linear-gradient(180deg, var(--emerald), var(--cyan));
+    opacity: 0.85;
+  }
+
+  .pipe-stop {
+    position: relative;
     display: grid;
-    grid-template-columns: 92px 1fr;
-    gap: 12px;
+    grid-template-columns: 32px 1fr;
+    gap: 10px;
     align-items: start;
-    padding: 10px 12px;
-    border: 1px solid var(--line-strong);
-    border-radius: 9px;
-    background-color: var(--bg);
   }
 
-  .poster-steps > li.is-key {
-    border-color: var(--accent);
-    box-shadow: 0 0 0 1px var(--accent) inset;
+  /* Flecha de dirección sobre el tubo, entre una parada y la siguiente. */
+  .pipe-stop:not(:last-child)::after {
+    content: '';
+    position: absolute;
+    left: 11px;
+    bottom: -7px;
+    width: 10px;
+    height: 7px;
+    background: var(--cyan);
+    clip-path: polygon(0 0, 100% 0, 50% 100%);
   }
 
-  .poster-step {
+  .pipe-node {
+    position: relative;
+    z-index: 1;
     display: inline-flex;
+    width: 32px;
+    height: 32px;
+    align-items: center;
+    justify-content: center;
+    margin-top: 2px;
+    border-radius: 9999px;
+    background: linear-gradient(135deg, var(--emerald), var(--cyan));
+    color: #fff;
+    box-shadow: 0 0 0 4px var(--bg);
+  }
+
+  .card {
+    min-width: 0;
+    padding: 6px 10px 7px;
+    border: 1px solid var(--card-line);
+    border-radius: 10px;
+    background: var(--card);
+    box-shadow: var(--shadow);
+  }
+
+  .card-head {
+    display: flex;
     align-items: center;
     gap: 7px;
-    font-size: 14px;
+    font-size: 12.5px;
+    font-weight: 650;
+    line-height: 1.25;
+  }
+
+  .chip {
+    flex-shrink: 0;
+    padding: 1px 6px;
+    border: 1px solid var(--card-line);
+    border-radius: 9999px;
+    font-family: var(--font-mono);
+    font-size: 9.5px;
+    font-weight: 600;
+    color: var(--cyan);
+  }
+
+  /* ---------- Código con resaltado ---------- */
+  .code {
+    display: block;
+    margin-top: 5px;
+    padding: 4px 8px;
+    border-radius: 6px;
+    background: var(--code-bg);
+    font-family: var(--font-mono);
+    font-size: 9.5px;
+    line-height: 1.5;
+    white-space: pre-wrap;
+    color: var(--muted);
+  }
+
+  .tok-k {
+    color: var(--tok-k);
+  }
+
+  .tok-s {
+    color: var(--tok-s);
+  }
+
+  .tok-n {
+    color: var(--tok-n);
+  }
+
+  .tok-op {
+    color: var(--emerald);
     font-weight: 700;
   }
 
-  .poster-step b {
-    display: inline-flex;
-    width: 22px;
-    height: 22px;
-    align-items: center;
-    justify-content: center;
-    border-radius: 999px;
-    background-color: var(--accent);
-    color: var(--on-accent);
-    font-family: var(--font-mono);
-    font-size: 11px;
+  .tok-c {
+    opacity: 0.75;
+    font-style: italic;
   }
 
-  .poster-body {
-    min-width: 0;
+  /* ---------- Staging: sucio → limpio ---------- */
+  .card-star {
+    border-color: var(--emerald);
+    box-shadow:
+      0 0 0 1px var(--emerald),
+      var(--shadow);
   }
 
-  .poster-note {
-    font-size: 13px;
-    font-weight: 600;
-    line-height: 1.3;
+  .chip-star {
+    border-color: var(--emerald);
+    background: var(--emerald);
+    color: var(--bg);
   }
 
-  .poster-code {
-    display: block;
-    margin-top: 4px;
-    font-family: var(--font-mono);
-    font-size: 11px;
-    line-height: 1.45;
-    color: var(--muted);
-    overflow-wrap: anywhere;
-  }
-
-  .poster-diff {
+  .diff {
     display: grid;
     gap: 2px;
     margin-top: 5px;
     font-family: var(--font-mono);
-    font-size: 11px;
-    line-height: 1.4;
+    font-size: 9.5px;
   }
 
-  .poster-diff li {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0 6px;
+  .diff li {
+    display: grid;
+    grid-template-columns: 1fr 14px 1fr;
+    align-items: center;
+    gap: 6px;
   }
 
-  .poster-diff del {
-    color: var(--muted);
+  .diff-bad,
+  .diff-good {
+    overflow: hidden;
+    padding: 1px 6px;
+    border-radius: 5px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
-  .poster-diff span {
-    color: var(--accent);
+  .diff-bad {
+    background: var(--bad-bg);
+    color: var(--bad);
+    text-decoration: line-through;
+    text-decoration-thickness: 1px;
   }
 
-  .poster-diff ins {
+  .diff-good {
+    background: var(--good-bg);
+    color: var(--good);
     font-weight: 700;
     text-decoration: none;
+    text-shadow: var(--glow);
   }
 
-  .poster-answer {
-    margin-top: 4px;
-    font-size: 12px;
-    line-height: 1.45;
+  .diff-arrow {
+    display: inline-flex;
+    justify-content: center;
+    color: var(--emerald);
   }
 
-  .poster-answer strong {
-    color: var(--accent);
-  }
-
-  .poster-cloud {
-    margin-top: auto;
-    padding-top: 12px;
-    border-top: 1px solid var(--line);
-  }
-
-  .poster-cloud-title {
+  /* ---------- Modelo: línea de tiempo de la guía ---------- */
+  .timeline {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    margin-top: 5px;
     font-family: var(--font-mono);
-    font-size: 11px;
+  }
+
+  .timeline li {
+    position: relative;
+    display: grid;
+    gap: 0;
+    padding-top: 9px;
+  }
+
+  .timeline li::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 7px;
+    height: 7px;
+    border-radius: 9999px;
+    background: var(--cyan);
+  }
+
+  .timeline li:not(:last-child)::after {
+    content: '';
+    position: absolute;
+    top: 3px;
+    left: 10px;
+    right: 6px;
+    height: 1px;
+    background: var(--card-line);
+  }
+
+  .timeline span {
+    font-size: 8.5px;
     color: var(--muted);
   }
 
-  .poster-cloud-chain {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 4px 6px;
-    margin-top: 5px;
-    font-size: 13px;
+  .timeline b {
+    font-size: 10px;
     font-weight: 600;
   }
 
-  .poster-arrow {
-    color: var(--accent);
+  /* ---------- Métrica: el valor de negocio ---------- */
+  .card-goal {
+    background:
+      linear-gradient(135deg, rgb(5 150 105 / 0.1), rgb(8 145 178 / 0.08)),
+      var(--card);
   }
 
-  .poster-footer {
+  .kpis {
+    display: grid;
+    grid-template-columns: auto auto 1fr;
+    align-items: center;
+    gap: 12px;
+    margin-top: 3px;
+  }
+
+  .kpi-main {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .kpi-main strong {
+    font-size: 26px;
+    font-weight: 800;
+    line-height: 1;
+    letter-spacing: -0.03em;
+    color: var(--emerald);
+    text-shadow: var(--glow);
+  }
+
+  .kpi-main span {
+    font-size: 9.5px;
+    line-height: 1.2;
+    color: var(--muted);
+  }
+
+  .kpi-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 9px;
+    border-radius: 9999px;
+    background: linear-gradient(135deg, var(--emerald), var(--cyan));
+    color: #fff;
+    font-size: 11px;
+    font-weight: 700;
+    white-space: nowrap;
+  }
+
+  .kpi-route {
+    font-family: var(--font-mono);
+    font-size: 9px;
+    line-height: 1.4;
+    text-align: right;
+  }
+
+  .kpi-route span {
+    color: var(--muted);
+  }
+
+  /* ---------- Arquitectura en AWS ---------- */
+  .cloud {
+    margin-top: auto;
+    padding: 7px 12px 7px;
+    border: 1px dashed var(--card-line);
+    border-radius: 10px;
+    background: var(--card);
+  }
+
+  .cloud-title {
+    font-size: 11px;
+    font-weight: 700;
+  }
+
+  .cloud-row {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 14px;
+    margin-top: 6px;
+  }
+
+  .cloud-item {
+    position: relative;
+    display: grid;
+    justify-items: center;
+    gap: 4px;
+  }
+
+  /* Conector entre servicios. */
+  .cloud-item:not(:last-child)::after {
+    content: '';
+    position: absolute;
+    top: 14px;
+    right: -12px;
+    width: 10px;
+    height: 2px;
+    background: var(--cyan);
+  }
+
+  .cloud-item:not(:last-child)::before {
+    content: '';
+    position: absolute;
+    top: 11px;
+    right: -14px;
+    width: 5px;
+    height: 8px;
+    background: var(--cyan);
+    clip-path: polygon(0 0, 100% 50%, 0 100%);
+  }
+
+  .cloud-box {
+    display: inline-flex;
+    width: 100%;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    padding: 5px 4px;
+    border: 1px solid var(--card-line);
+    border-radius: 7px;
+    background: var(--code-bg);
+    color: var(--fg);
+    font-size: 9.5px;
+    font-weight: 700;
+    white-space: nowrap;
+  }
+
+  .cloud-box :global(svg) {
+    flex-shrink: 0;
+    color: var(--emerald);
+  }
+
+  .cloud-role {
+    font-family: var(--font-mono);
+    font-size: 8.5px;
+    color: var(--muted);
+  }
+
+  .poster-foot {
     display: flex;
     justify-content: space-between;
-    margin-top: 12px;
-    font-family: var(--font-mono);
-    font-size: 11px;
+    margin-top: 8px;
+    padding-top: 6px;
+    border-top: 1px solid var(--card-line);
+    font-size: 10px;
+    font-weight: 600;
     color: var(--muted);
+  }
+
+  .poster-foot span:last-child {
+    font-family: var(--font-mono);
+    font-weight: 500;
+    color: var(--cyan);
   }
 </style>
