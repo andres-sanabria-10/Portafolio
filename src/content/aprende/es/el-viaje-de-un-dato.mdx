@@ -1,6 +1,6 @@
 ---
 title: El viaje de un dato por un pipeline
-summary: Seguimos una guía sucia desde el JSON de la API hasta la métrica del tablero, etapa por etapa, con una consulta que puedes correr en tu navegador y cómo sería el mismo pipeline en AWS.
+summary: Seguimos una guía sucia desde el JSON de la API hasta la métrica del tablero, etapa por etapa, y vemos cómo sería el mismo pipeline en AWS.
 date: 2026-11-26
 tags: [pipelines, calidad de datos, AWS]
 level: básico
@@ -17,7 +17,7 @@ linkedin_post: |
 
   Al final, esa fila responde una pregunta concreta: para ir de Bucaramanga a Bogotá, ¿qué transportadora llega más rápido?
 
-  Armé el recorrido completo, interactivo y con una consulta SQL que corre en tu navegador. Enlace en los comentarios.
+  Armé el recorrido completo e interactivo, etapa por etapa. Enlace en los comentarios.
 
   ¿Qué es lo más raro que te ha llegado de una API?
 
@@ -26,7 +26,6 @@ linkedin_post: |
 
 import DataJourneySection from '../../../components/DataJourneySection.astro';
 import DataJourneyPoster from '../../../components/DataJourneyPoster.astro';
-import PlaygroundSection from '../../../components/PlaygroundSection.astro';
 
 ## En una frase
 
@@ -37,12 +36,6 @@ Un **pipeline de datos** lleva los datos desde donde nacen hasta donde alguien l
 Esta guía es sintética, pero sus problemas son los que llegan de verdad de una API: espacios en la llave, un estado con el vocabulario de cada transportadora, abreviaturas en la ciudad, un peso en cero y una fecha en formato local. Avanza con los botones o con las flechas del teclado.
 
 <DataJourneySection lang="es" />
-
-## Pruébalo tú: la consulta en vivo
-
-La última etapa es una consulta. Aquí puedes correrla sobre 20.000 guías sintéticas, con DuckDB funcionando completo en tu navegador. La segunda consulta muestra qué pasa si te saltas el paso de staging y cuentas filas en lugar de guías.
-
-<PlaygroundSection lang="es" only={['07_transportadoras_misma_ruta', '06_error_por_duplicados']} />
 
 ## ¿Y en la nube?
 

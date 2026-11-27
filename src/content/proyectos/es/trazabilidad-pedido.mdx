@@ -24,16 +24,12 @@ linkedin_post: |
   2. Limpia las llaves en la entrada. Un espacio al inicio de un número de guía basta para romper un cruce.
   3. SQL es la fuente de verdad; el tablero es la presentación.
 
-  Escribí el caso completo, y en mi sitio puedes reproducir el error con datos sintéticos.
+  Escribí el caso completo en mi sitio: arquitectura, decisiones y lo que aprendí validando el dato.
 
   ¿Tú validas tus tableros contra la base de datos o confías en el modelo?
 ---
 
 import TraceabilityDiagram from '../../../components/TraceabilityDiagram.astro';
-import resumen from '../../../../public/data/envios_resumen.json';
-
-export const n = (value) => value.toLocaleString('es-CO');
-export const peor = resumen.otd_por_transportadora.reduce((a, b) => (b.diferencia_pp < a.diferencia_pp ? b : a));
 
 {/*
   Borrador. Antes de publicar:
@@ -96,45 +92,6 @@ Haz clic en cada etapa para ver qué datos entran, qué se transforma y qué pro
 
 **4. Comparar en igualdad de condiciones.** Una transportadora que cubre destinos lejanos siempre se vería peor en un promedio general, así que los tiempos se comparan por ruta (origen–destino) y solo entre transportadoras que la comparten. El cumplimiento usa una sola regla de fecha prometida para todas y una definición escrita.
 
-## El código, en una consulta
-
-Para un mismo origen y destino, ¿qué transportadora llega más rápido? Ilustrativo, sobre el modelo y con nombres genéricos:
-
-```sql
--- Días de recogida a entrega por ruta y transportadora,
--- solo con 20 entregas o más y en rutas que atienden 2 o más.
-WITH por_ruta AS (
-    SELECT
-        ciudad_origen + ' → ' + ciudad_destino AS ruta,
-        transportadora,
-        COUNT(*) AS entregas,
-        AVG(DATEDIFF(HOUR, fecha_recogida, fecha_entrega)) / 24.0
-            AS dias_promedio
-    FROM modelo.vw_fact_envios
-    WHERE ultimo_estado = 'entregado'
-    GROUP BY ciudad_origen, ciudad_destino, transportadora
-    HAVING COUNT(*) >= 20
-),
-compartidas AS (
-    SELECT ruta
-    FROM por_ruta
-    GROUP BY ruta
-    HAVING COUNT(*) >= 2
-)
-SELECT
-    p.ruta,
-    p.transportadora,
-    p.entregas,
-    CAST(p.dias_promedio AS DECIMAL(5, 2)) AS dias_promedio,
-    RANK() OVER (
-        PARTITION BY p.ruta
-        ORDER BY p.dias_promedio
-    ) AS puesto_en_ruta
-FROM por_ruta AS p
-JOIN compartidas AS c ON c.ruta = p.ruta
-ORDER BY p.ruta, puesto_en_ruta;
-```
-
 ## Calidad de datos
 
 Esta es la parte de la que más aprendí. Antes de entregar el tablero comparé cada indicador con una consulta directa en SQL, y el cumplimiento de una transportadora salía **varios puntos más bajo** en Power BI. Una relación del modelo contaba cada guía una vez por cada estado que tenía, y como cada transportadora reporta un número distinto de estados, el error castigaba más a unas que a otras. Lo corregí contando guías, una vez y con su estado final, y dejé SQL como la referencia para validar.
@@ -147,7 +104,7 @@ Otros errores reales que encontré validando el dato:
 - **Una API con la fecha final exclusiva:** al paginar se perdía 1 de cada 3 días, y apareció como un 29,4 % de guías sin flete. Se corrigió con ventanas de fechas contiguas.
 - **Una actualización que borraba datos** cuando la API devolvía un campo vacío. Ahora la carga conserva el valor anterior.
 
-En cada carga se valida que haya una fila por guía, que no queden estados sin mapear ni valores de relleno y que las fechas estén en orden. Puedes reproducir el error del conteo duplicado con datos sintéticos en el [playground de SQL](/playground/): con el dataset del sitio, la {peor.transportadora} pasa de {n(peor.otd_pct)} % a {n(peor.otd_ingenuo_pct)} % si se cuentan filas en lugar de guías. *Cifras 100 % sintéticas.*
+En cada carga se valida que haya una fila por guía, que no queden estados sin mapear ni valores de relleno y que las fechas estén en orden.
 
 {/* TODO(Andrés): confirmar que estas validaciones quedaron en el pipeline de la empresa. */}
 
