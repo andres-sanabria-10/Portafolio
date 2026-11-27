@@ -9,7 +9,7 @@
  *
  * Ejemplo:
  *   node scripts/export_infografia.mjs \
- *     http://localhost:4321/aprende/el-viaje-de-un-dato/ \
+ *     http://localhost:4321/blog/el-viaje-de-un-dato/ \
  *     "#poster-viaje-dato" public/infografias/el-viaje-de-un-dato.png
  *
  * El tema (light | dark) cambia el sitio y la paleta propia de las infografías
