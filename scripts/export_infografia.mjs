@@ -9,8 +9,8 @@
  *
  * Ejemplo:
  *   node scripts/export_infografia.mjs \
- *     http://localhost:4321/aprende/que-es-un-pipeline-de-datos/ \
- *     "#cheatsheet-pipeline" public/infografias/que-es-un-pipeline-de-datos.png
+ *     http://localhost:4321/aprende/el-viaje-de-un-dato/ \
+ *     "#poster-viaje-dato" public/infografias/el-viaje-de-un-dato.png
  *
  * La ruta de Chrome se puede cambiar con la variable CHROME_PATH.
  */

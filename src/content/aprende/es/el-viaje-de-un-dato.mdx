@@ -1,0 +1,85 @@
+---
+title: El viaje de un dato por un pipeline
+summary: Seguimos una guía sucia desde el JSON de la API hasta la métrica del tablero, etapa por etapa, con una consulta que puedes correr en tu navegador y cómo sería el mismo pipeline en AWS.
+date: 2026-11-26
+tags: [pipelines, calidad de datos, AWS]
+level: básico
+linkedin_post: |
+  Este dato llegó así de una API: " GS482193. ", "ENTREGADA", "Bogotá D.C.", peso "0".
+
+  Si lo cargas tal cual, la guía no cruza con tu ERP, el estado no coincide con el de las otras transportadoras y el peso cero te arruina el promedio de costo por kilo. Nadie ve el error: el tablero simplemente cuenta mal.
+
+  Así lo resuelve un pipeline, en cinco paradas:
+
+  1. Raw: se guarda tal cual llegó, con la fecha de carga. Si cambia una regla, se recalcula sin volver a llamar a la API.
+  2. Staging: se limpia una sola vez, con reglas (llave sin espacios, estado traducido con una tabla de mapeo, el cero pasa a NULL).
+  3. Modelo: tres eventos se vuelven una fila por guía, y ninguna se cuenta dos veces.
+
+  Al final, esa fila responde una pregunta concreta: para ir de Bucaramanga a Bogotá, ¿qué transportadora llega más rápido?
+
+  Armé el recorrido completo, interactivo y con una consulta SQL que corre en tu navegador. Enlace en los comentarios.
+
+  ¿Qué es lo más raro que te ha llegado de una API?
+
+  #DataEngineering #CalidadDeDatos
+---
+
+import DataJourneySection from '../../../components/DataJourneySection.astro';
+import DataJourneyPoster from '../../../components/DataJourneyPoster.astro';
+import PlaygroundSection from '../../../components/PlaygroundSection.astro';
+
+## En una frase
+
+Un **pipeline de datos** lleva los datos desde donde nacen hasta donde alguien los usa, limpiándolos en el camino, de forma automática y repetible. La mejor manera de entenderlo es seguir un solo dato de principio a fin.
+
+## El viaje, etapa por etapa
+
+Esta guía es sintética, pero sus problemas son los que llegan de verdad de una API: espacios en la llave, un estado con el vocabulario de cada transportadora, abreviaturas en la ciudad, un peso en cero y una fecha en formato local. Avanza con los botones o con las flechas del teclado.
+
+<DataJourneySection lang="es" />
+
+## Pruébalo tú: la consulta en vivo
+
+La última etapa es una consulta. Aquí puedes correrla sobre 20.000 guías sintéticas, con DuckDB funcionando completo en tu navegador. La segunda consulta muestra qué pasa si te saltas el paso de staging y cuentas filas en lugar de guías.
+
+<PlaygroundSection lang="es" only={['07_transportadoras_misma_ruta', '06_error_por_duplicados']} />
+
+## ¿Y en la nube?
+
+El pipeline del recorrido corre on-premise, con Python y SQL Server. Las etapas son las mismas en la nube; solo cambian las piezas. Así lo armaría en AWS, que es lo que estoy aprendiendo:
+
+| Etapa | On-premise | En AWS |
+| --- | --- | --- |
+| Ingesta programada | Python + Programador de tareas | AWS Lambda + Amazon EventBridge |
+| Raw | Tabla en SQL Server | Amazon S3, en Parquet y particionado por fecha |
+| Staging | Vistas en SQL Server | AWS Glue (catálogo y trabajos de limpieza) |
+| Modelo y consulta | Vistas en SQL Server | Amazon Athena (o Redshift si crece) |
+| Consumo | Power BI | Power BI o Amazon QuickSight |
+
+La idea de fondo no cambia: guardar el crudo, limpiar una sola vez con reglas y dejar un modelo con un grano claro.
+
+## Los errores que este recorrido evita
+
+- **Limpiar en el tablero.** Si cada reporte limpia a su manera, dos tableros dan dos cifras para lo mismo.
+- **Rellenar lo que no se sabe.** Un peso en cero o una fecha `1900-01-01` parecen datos y arruinan los promedios; lo que no se conoce es `NULL`.
+- **Contar eventos como si fueran guías.** Una guía con tres estados no son tres envíos.
+- **Comparar promedios generales.** Una transportadora que va a destinos lejanos siempre se verá más lenta si no se compara por ruta.
+
+## La versión para compartir
+
+<DataJourneyPoster
+  id="poster-viaje-dato"
+  lang="es"
+  title="El viaje de un dato"
+  subtitle="Una guía sucia, de la API al tablero, en cinco paradas."
+  cloudTitle="El mismo pipeline en AWS"
+  cloud={['Lambda', 'S3', 'Glue', 'Athena', 'QuickSight']}
+  author="Andrés Felipe Sanabria"
+  site="andres-felipe-sanabria.uk"
+/>
+
+[Descargar la imagen en PNG (1080 × 1350)](/infografias/el-viaje-de-un-dato.png)
+
+## Cómo lo apliqué
+
+Este recorrido es, en pequeño, el del [proyecto de trazabilidad](/proyectos/): un pipeline que consume las APIs de 7 transportadoras cada 4 horas, limpia en staging y deja una fila por guía para responder dónde se demora cada envío y quién cumple.

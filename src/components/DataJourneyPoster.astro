@@ -1,0 +1,279 @@
+---
+import type { Lang } from '../i18n/config';
+import { getJourneyContent } from '../i18n/journey';
+
+/**
+ * Imagen para redes de "El viaje de un dato". Mide exactamente 540 × 675 px
+ * (4:5): exportada al doble queda en 1080 × 1350, el formato vertical que
+ * LinkedIn e Instagram muestran completo en el feed.
+ *
+ *   node scripts/export_infografia.mjs <url> "#poster-viaje-dato" public/infografias/el-viaje-de-un-dato.png
+ *
+ * Usa los mismos datos sintéticos que DataJourney.vue.
+ */
+interface Props {
+  id: string;
+  lang: Lang;
+  title: string;
+  subtitle: string;
+  cloudTitle: string;
+  cloud: string[];
+  author: string;
+  site: string;
+}
+
+const { id, lang, title, subtitle, cloudTitle, cloud, author, site } = Astro.props;
+const { steps } = getJourneyContent(lang);
+const pick = (stepId: string) => steps.find((s) => s.id === stepId)!;
+const api = pick('api');
+const staging = pick('staging');
+const modelo = pick('modelo');
+const metrica = pick('metrica');
+const field = (stepId: string, key: string) => pick(stepId).fields.find((f) => f.key === key)?.value ?? '';
+---
+
+<figure id={id} class="poster not-prose" aria-label={`${title}. ${subtitle}`}>
+  <header>
+    <h2 class="poster-title">{title}</h2>
+    <p class="poster-subtitle">{subtitle}</p>
+  </header>
+
+  <ol class="poster-steps">
+    <li>
+      <span class="poster-step"><b>1</b>{api.label}</span>
+      <div class="poster-body">
+        <p class="poster-note">{api.title}</p>
+        <code class="poster-code">{api.fields.slice(0, 3).map((f) => f.value).join('  ')}</code>
+      </div>
+    </li>
+    <li>
+      <span class="poster-step"><b>2</b>{pick('raw').label}</span>
+      <div class="poster-body">
+        <p class="poster-note">{pick('raw').title}</p>
+        <code class="poster-code">+ fecha_carga {field('raw', 'fecha_carga')}</code>
+      </div>
+    </li>
+    <li class="is-key">
+      <span class="poster-step"><b>3</b>{staging.label}</span>
+      <div class="poster-body">
+        <p class="poster-note">{staging.title}</p>
+        <ul class="poster-diff">
+          {
+            staging.fields.slice(0, 4).map((f) => (
+              <li>
+                <del>{f.before}</del>
+                <span aria-hidden="true">→</span>
+                <ins>{f.value}</ins>
+              </li>
+            ))
+          }
+        </ul>
+      </div>
+    </li>
+    <li>
+      <span class="poster-step"><b>4</b>{modelo.label}</span>
+      <div class="poster-body">
+        <p class="poster-note">{modelo.title}</p>
+        <code class="poster-code">
+          recogida {field('modelo', 'fecha_recogida').slice(5)} · tránsito {field('modelo', 'fecha_transito').slice(5)} · entrega {field('modelo', 'fecha_entrega').slice(5)}
+        </code>
+      </div>
+    </li>
+    <li>
+      <span class="poster-step"><b>5</b>{metrica.label}</span>
+      <div class="poster-body">
+        <p class="poster-note">{metrica.title}</p>
+        <p class="poster-answer">
+          {field('metrica', 'ruta').replaceAll("'", '')} · {field('metrica', 'transportadora').replaceAll("'", '')} ·{' '}
+          <strong>{field('metrica', 'dias_promedio').replace('.', ',')} días</strong> · puesto {field('metrica', 'puesto_en_ruta')}
+        </p>
+      </div>
+    </li>
+  </ol>
+
+  <section class="poster-cloud">
+    <p class="poster-cloud-title">{cloudTitle}</p>
+    <p class="poster-cloud-chain">
+      {
+        cloud.map((item, i) => (
+          <>
+            <span>{item}</span>
+            {i < cloud.length - 1 && <span class="poster-arrow" aria-hidden="true">→</span>}
+          </>
+        ))
+      }
+    </p>
+  </section>
+
+  <footer class="poster-footer">
+    <span>{author}</span>
+    <span>{site}</span>
+  </footer>
+</figure>
+
+<style>
+  .poster {
+    display: flex;
+    flex-direction: column;
+    width: 540px;
+    max-width: 100%;
+    height: 675px;
+    margin-block: 2rem;
+    padding: 30px 28px 20px;
+    overflow: hidden;
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    background-color: var(--surface);
+    color: var(--fg);
+  }
+
+  .poster-title {
+    font-size: 32px;
+    font-weight: 750;
+    line-height: 1.05;
+    letter-spacing: -0.03em;
+  }
+
+  .poster-subtitle {
+    margin-top: 8px;
+    font-size: 15px;
+    line-height: 1.4;
+    color: var(--muted);
+  }
+
+  .poster-steps {
+    display: grid;
+    gap: 9px;
+    margin-top: 20px;
+  }
+
+  .poster-steps > li {
+    display: grid;
+    grid-template-columns: 92px 1fr;
+    gap: 12px;
+    align-items: start;
+    padding: 10px 12px;
+    border: 1px solid var(--line-strong);
+    border-radius: 9px;
+    background-color: var(--bg);
+  }
+
+  .poster-steps > li.is-key {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 1px var(--accent) inset;
+  }
+
+  .poster-step {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    font-size: 14px;
+    font-weight: 700;
+  }
+
+  .poster-step b {
+    display: inline-flex;
+    width: 22px;
+    height: 22px;
+    align-items: center;
+    justify-content: center;
+    border-radius: 999px;
+    background-color: var(--accent);
+    color: var(--on-accent);
+    font-family: var(--font-mono);
+    font-size: 11px;
+  }
+
+  .poster-body {
+    min-width: 0;
+  }
+
+  .poster-note {
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 1.3;
+  }
+
+  .poster-code {
+    display: block;
+    margin-top: 4px;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    line-height: 1.45;
+    color: var(--muted);
+    overflow-wrap: anywhere;
+  }
+
+  .poster-diff {
+    display: grid;
+    gap: 2px;
+    margin-top: 5px;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    line-height: 1.4;
+  }
+
+  .poster-diff li {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0 6px;
+  }
+
+  .poster-diff del {
+    color: var(--muted);
+  }
+
+  .poster-diff span {
+    color: var(--accent);
+  }
+
+  .poster-diff ins {
+    font-weight: 700;
+    text-decoration: none;
+  }
+
+  .poster-answer {
+    margin-top: 4px;
+    font-size: 12px;
+    line-height: 1.45;
+  }
+
+  .poster-answer strong {
+    color: var(--accent);
+  }
+
+  .poster-cloud {
+    margin-top: auto;
+    padding-top: 12px;
+    border-top: 1px solid var(--line);
+  }
+
+  .poster-cloud-title {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--muted);
+  }
+
+  .poster-cloud-chain {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 4px 6px;
+    margin-top: 5px;
+    font-size: 13px;
+    font-weight: 600;
+  }
+
+  .poster-arrow {
+    color: var(--accent);
+  }
+
+  .poster-footer {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 12px;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--muted);
+  }
+</style>

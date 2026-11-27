@@ -13,9 +13,11 @@ import SqlPlayground from './vue/SqlPlayground.vue';
  */
 interface Props {
   lang: Lang;
+  /** Ids de las consultas a mostrar (nombre del archivo sin .sql). Por defecto, todas. */
+  only?: string[];
 }
 
-const { lang } = Astro.props;
+const { lang, only } = Astro.props;
 const t = useTranslations(lang);
 
 const files = import.meta.glob<string>('/scripts/queries/*.sql', {
@@ -23,7 +25,8 @@ const files = import.meta.glob<string>('/scripts/queries/*.sql', {
   import: 'default',
   eager: true,
 });
-const queries = toPlaygroundQueries(files);
+const all = toPlaygroundQueries(files);
+const queries = only ? all.filter((q) => only.includes(q.id)) : all;
 
 const labels: PlaygroundLabels = {
   badge: t('playground.badge'),

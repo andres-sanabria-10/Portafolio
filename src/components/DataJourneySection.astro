@@ -1,0 +1,14 @@
+---
+import type { Lang } from '../i18n/config';
+import { getJourneyContent } from '../i18n/journey';
+import DataJourney from './vue/DataJourney.vue';
+
+/** "El viaje de un dato" listo para el MDX: `<DataJourneySection lang="es" />`. */
+interface Props {
+  lang: Lang;
+}
+
+const { lang } = Astro.props;
+---
+
+<DataJourney client:visible content={getJourneyContent(lang)} />
